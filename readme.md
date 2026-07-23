@@ -1,0 +1,1 @@
+Build a modern SQL Data Warehouse using the Medallion Architecture (Bronze, Silver, Gold) on the Olist Brazilian E-commerce dataset and develop interactive Power BI dashboards for business reporting.
