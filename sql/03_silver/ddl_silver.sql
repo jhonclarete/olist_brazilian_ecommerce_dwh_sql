@@ -27,8 +27,8 @@ END;
 CREATE TABLE silver.olist_geolocation_dataset
 (
 	geolocation_zip_code_prefix NVARCHAR(5),
-	geolocation_lat DECIMAL(18, 15),
-	geolocation_lng DECIMAL(18, 15),
+	geolocation_lat DECIMAL(9, 6),
+	geolocation_lng DECIMAL(9, 6),
 	geolocation_city NVARCHAR(50),
 	geolocation_state NVARCHAR(2),
 	dwh_created_date DATETIME2 DEFAULT GETDATE()
