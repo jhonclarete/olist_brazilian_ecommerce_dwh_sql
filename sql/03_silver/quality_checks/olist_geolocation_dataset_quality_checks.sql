@@ -78,3 +78,9 @@ WHERE geolocation_state COLLATE Latin1_General_CS_AS != UPPER(geolocation_state)
 SELECT * 
 FROM silver.olist_geolocation_dataset 
 WHERE REGEXP_LIKE(geolocation_city, '(Ã[a-zA-Z0-9]|â€|æ—)', 'c'); 
+
+-- Check for NULL values in geolocation_state
+-- Expected result: No result
+SELECT * 
+FROM silver.olist_geolocation_dataset 
+WHERE geolocation_state IS NULL
