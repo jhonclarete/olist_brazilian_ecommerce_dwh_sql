@@ -45,8 +45,8 @@ CREATE TABLE bronze.olist_order_items_dataset
 	product_id NVARCHAR(50),
 	seller_id NVARCHAR(50),
 	shipping_limit_date DATETIME2,
-	price MONEY,
-	freight_value MONEY
+	price DECIMAL(16,2),
+	freight_value DECIMAL(16,2)
 );
 GO
 
@@ -61,7 +61,7 @@ CREATE TABLE bronze.olist_order_payments_dataset
 	payment_sequential INT,
 	payment_type NVARCHAR(20),
 	payment_installments INT,
-	payment_value MONEY
+	payment_value DECIMAL(16,2)
 );
 GO
 
@@ -77,7 +77,7 @@ CREATE TABLE bronze.olist_order_reviews_dataset
 	review_score INT,
 	review_comment_title NVARCHAR(40),
 	review_comment_message NVARCHAR(400),
-	review_creation_date DATE,
+	review_creation_date DATETIME2,
 	review_answer_timestamp DATETIME2
 );
 GO
@@ -96,7 +96,7 @@ CREATE TABLE bronze.olist_orders_dataset
 	order_approved_at DATETIME2,
 	order_delivered_carrier_date DATETIME2,
 	order_delivered_customer_date DATETIME2,
-	order_estimated_delivery_date DATE
+	order_estimated_delivery_date DATETIME2
 );
 GO
 
