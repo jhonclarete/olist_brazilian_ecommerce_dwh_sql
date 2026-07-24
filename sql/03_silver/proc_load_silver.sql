@@ -33,15 +33,42 @@ BEGIN
         )
         SELECT
             geolocation_zip_code_prefix,
-            ROUND(CAST(geolocation_lat AS DECIMAL(9,6)), 6) AS geolocation_lat,
-            ROUND(CAST(geolocation_lng AS DECIMAL(9,6)), 6) AS geolocation_lng,
-            UPPER(TRANSLATE(geolocation_city, 
-                        N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
-                        N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc')) AS geolocation_city,
+            geolocation_lat,
+            geolocation_lng,
+            geolocation_city,
             geolocation_state
-        FROM bronze.olist_geolocation_dataset
-        WHERE (geolocation_lat BETWEEN -33.8 AND 5.3) 
-        AND (geolocation_lng BETWEEN -74.0 AND -34.7)
+        FROM 
+        (
+            SELECT
+                geolocation_zip_code_prefix,
+                ROUND(CAST(geolocation_lat AS DECIMAL(9,6)), 6) AS geolocation_lat,
+                ROUND(CAST(geolocation_lng AS DECIMAL(9,6)), 6) AS geolocation_lng,
+                LOWER(TRANSLATE(
+                    TRIM(geolocation_city), 
+                    N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
+                    N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc'
+                )) AS geolocation_city,
+                UPPER(TRIM(geolocation_state)) AS geolocation_state,
+                ROW_NUMBER() 
+                OVER
+                (
+                    PARTITION BY 
+                        geolocation_zip_code_prefix, 
+                        ROUND(CAST(geolocation_lat AS DECIMAL(9,6)), 6),
+                        ROUND(CAST(geolocation_lng AS DECIMAL(9,6)), 6),
+                        LOWER(TRANSLATE(
+                            TRIM(geolocation_city), 
+                            N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
+                            N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc')), 
+                        UPPER(TRIM(geolocation_state))
+                    ORDER BY 
+                        (SELECT NULL)
+                ) AS row_num
+            FROM bronze.olist_geolocation_dataset
+        )t
+        WHERE row_num = 1
+        AND (geolocation_lat BETWEEN -33.75 AND 5.27) 
+        AND (geolocation_lng BETWEEN -73.99 AND -28.84)
 
         -- TRUNCATE AND LOAD silver.olist_sellers_dataset
         INSERT INTO silver.olist_sellers_dataset
