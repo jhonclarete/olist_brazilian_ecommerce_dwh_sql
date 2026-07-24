@@ -98,6 +98,11 @@ SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_city != TRIM(geolocation_city);
 
+-- Check for uppercases
+SELECT *
+FROM silver.olist_geolocation_dataset
+WHERE geolocation_city COLLATE Latin1_General_CS_AS = UPPER(geolocation_city);
+
 
 -- geolocation_state
 
@@ -115,6 +120,16 @@ WHERE TRIM(geolocation_state) = ''
 SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_state != TRIM(geolocation_state);
+
+-- Check for lowercases
+SELECT *
+FROM silver.olist_geolocation_dataset
+WHERE geolocation_state COLLATE Latin1_General_CS_AS = LOWER(geolocation_state);
+
+-- Check length
+SELECT *
+FROM silver.olist_geolocation_dataset
+WHERE LEN(geolocation_state) != 2;
 
 -- Find invalid state codes
 SELECT DISTINCT geolocation_state

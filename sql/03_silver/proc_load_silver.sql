@@ -71,6 +71,7 @@ BEGIN
         AND (geolocation_lng BETWEEN -73.99 AND -28.84)
 
         -- TRUNCATE AND LOAD silver.olist_sellers_dataset
+        TRUNCATE TABLE silver.olist_sellers_dataset;
         INSERT INTO silver.olist_sellers_dataset
         (
             seller_id,
@@ -81,10 +82,15 @@ BEGIN
         SELECT 
             seller_id,
             seller_zip_code_prefix,
-            seller_city,
+            LOWER(TRANSLATE(
+                    TRIM(seller_city), 
+                    N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
+                    N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc'
+                )) AS seller_city,
             seller_state
         FROM bronze.olist_sellers_dataset
         WHERE seller_zip_code_prefix IN (SELECT geolocation_zip_code_prefix FROM silver.olist_geolocation_dataset)
+        AND seller_city LIKE '%[^0-9]%'
 
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';
