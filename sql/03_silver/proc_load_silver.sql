@@ -43,6 +43,22 @@ BEGIN
         WHERE (geolocation_lat BETWEEN -33.8 AND 5.3) 
         AND (geolocation_lng BETWEEN -74.0 AND -34.7)
 
+        -- TRUNCATE AND LOAD silver.olist_sellers_dataset
+        INSERT INTO silver.olist_sellers_dataset
+        (
+            seller_id,
+            seller_zip_code_prefix,
+            seller_city,
+            seller_state
+        )
+        SELECT 
+            seller_id,
+            seller_zip_code_prefix,
+            seller_city,
+            seller_state
+        FROM bronze.olist_sellers_dataset
+        WHERE seller_zip_code_prefix IN (SELECT geolocation_zip_code_prefix FROM silver.olist_geolocation_dataset)
+
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';
         PRINT 'Loading silver Layer is Completed';
