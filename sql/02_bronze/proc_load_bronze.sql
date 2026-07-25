@@ -19,33 +19,52 @@ BEGIN
         PRINT '------------------------------------------------';
         PRINT 'Loading Tables';
         PRINT '------------------------------------------------';
+
+        PRINT 'Truncating/Inserting bronze.olist_customers_dataset';
         TRUNCATE TABLE bronze.olist_customers_dataset;
         BULK INSERT bronze.olist_customers_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\olist_customers_dataset.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
+        PRINT 'Truncating/Inserting bronze.olist_geolocation_dataset';
         TRUNCATE TABLE bronze.olist_geolocation_dataset;
         BULK INSERT bronze.olist_geolocation_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\olist_geolocation_dataset.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
+        PRINT 'Truncating/Inserting bronze.olist_order_items_dataset';
         TRUNCATE TABLE bronze.olist_order_items_dataset;
         BULK INSERT bronze.olist_order_items_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\olist_order_items_dataset.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
+        PRINT 'Truncating/Inserting bronze.olist_order_payments_dataset';
         TRUNCATE TABLE bronze.olist_order_payments_dataset;
         BULK INSERT bronze.olist_order_payments_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\olist_order_payments_dataset.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
+        PRINT 'Truncating/Inserting bronze.olist_order_reviews_dataset';
         TRUNCATE TABLE bronze.olist_order_reviews_dataset;
         BULK INSERT bronze.olist_order_reviews_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\olist_order_reviews_dataset.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
+        PRINT 'Truncating/Inserting bronze.olist_orders_dataset';
         TRUNCATE TABLE bronze.olist_orders_dataset;
         BULK INSERT bronze.olist_orders_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\olist_orders_dataset.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
+        PRINT 'Truncating/Inserting bronze.olist_products_dataset';
         TRUNCATE TABLE bronze.olist_products_dataset;
         BULK INSERT bronze.olist_products_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\olist_products_dataset.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
+        PRINT 'Truncating/Inserting bronze.olist_sellers_dataset';
         TRUNCATE TABLE bronze.olist_sellers_dataset;
         BULK INSERT bronze.olist_sellers_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\olist_sellers_dataset.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
+        PRINT 'Truncating/Inserting bronze.olist_customers_dataset';
         TRUNCATE TABLE bronze.olist_product_category_name_translation_dataset;
         BULK INSERT bronze.olist_product_category_name_translation_dataset FROM 'C:\Users\jhonr\source\repos\olist_brazilian_ecommerce_dwh_sql\datasets\product_category_name_translation.csv'
             WITH (FIRSTROW = 2, FORMAT = 'CSV', FIELDQUOTE = '"', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', TABLOCK, CODEPAGE = '65001');
+        
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';
         PRINT 'Loading Bronze Layer is Completed';

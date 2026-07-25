@@ -103,6 +103,11 @@ SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_city COLLATE Latin1_General_CS_AS = UPPER(geolocation_city);
 
+-- Check if there are mojibake
+SELECT * 
+FROM silver.olist_geolocation_dataset
+WHERE REGEXP_LIKE(geolocation_city, '(Ã[a-zA-Z0-9]|â€|æ—)', 'c'); 
+
 
 -- geolocation_state
 

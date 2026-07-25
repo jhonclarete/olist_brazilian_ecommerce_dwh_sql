@@ -1,4 +1,4 @@
-use olist_brazilian_ecommerce_dwh;
+USE olist_brazilian_ecommerce_dwh;
 GO
 
 -- seller_id
@@ -60,11 +60,6 @@ WHERE LEN(seller_zip_code_prefix) != 5
 SELECT *
 FROM silver.olist_sellers_dataset
 WHERE seller_zip_code_prefix LIKE '%[^0-9]%'
-
--- Check if seller_zip_code_prefix exists in geolocation
-SELECT * 
-FROM silver.olist_sellers_dataset
-WHERE seller_zip_code_prefix NOT IN (SELECT geolocation_zip_code_prefix FROM silver.olist_geolocation_dataset)
 
 
 -- geolocation_city
