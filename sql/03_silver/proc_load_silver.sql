@@ -78,25 +78,34 @@ BEGIN
             seller_zip_code_prefix,
             seller_city,
             seller_state,
-	        dwh_geolocation_missing_flag
+            dwh_unknown_zip_code_prefix_flag,
+            dwh_numeric_city_name_flag,
+            dwh_unknown_state_flag
         )
         SELECT 
-            s.seller_id,
-            s.seller_zip_code_prefix,
+            seller_id,
+            seller_zip_code_prefix,
             LOWER(TRANSLATE(
-                    TRIM(s.seller_city), 
+                    TRIM(seller_city), 
                     N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
                     N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc'
                 )) AS seller_city,
-            s.seller_state,
+            seller_state,
             CASE 
-                WHEN g.geolocation_zip_code_prefix IS NULL THEN 1
+                WHEN seller_zip_code_prefix NOT IN (SELECT geolocation_zip_code_prefix FROM silver.olist_geolocation_dataset) THEN 1
                 ELSE 0
-            END AS dwh_geolocation_missing_flag
-        FROM bronze.olist_sellers_dataset s
-        LEFT JOIN silver.olist_geolocation_dataset g
-        ON s.seller_zip_code_prefix = g.geolocation_zip_code_prefix
-        WHERE s.seller_city LIKE '%[^0-9]%'
+            END AS dwh_unknown_zip_code_prefix_flag,
+            CASE 
+                WHEN seller_city NOT LIKE '%[^0-9]%' THEN 1
+                ELSE 0
+            END AS dwh_numeric_city_name_flag,
+            CASE 
+                WHEN seller_state NOT IN ('AC','AL','AP','AM','BA','CE','DF','ES','GO',
+                    'MA','MT','MS','MG','PA','PB','PR','PE','PI',
+                    'RJ','RN','RS','RO','RR','SC','SP','SE','TO') THEN 1
+                ELSE 0
+            END AS dwh_unknown_state_flag
+        FROM bronze.olist_sellers_dataset
 
         PRINT 'Truncating/Inserting silver.olist_product_category_name_translation_dataset';
         TRUNCATE TABLE silver.olist_product_category_name_translation_dataset;
@@ -140,7 +149,10 @@ BEGIN
         )
         SELECT 
             p.product_id,
-            p.product_category_name,
+            CASE 
+                WHEN p.product_category_name IS NULL THEN 'uncategorized'
+                ELSE  p.product_category_name
+            END AS product_category_name,
             CAST(p.product_name_lenght AS INT) AS product_name_lenght,
             CAST(p.product_description_lenght AS INT) AS product_description_lenght,
             CAST(p.product_photos_qty AS INT) AS product_photos_qty,
@@ -177,6 +189,24 @@ BEGIN
         FROM bronze.olist_products_dataset p
         LEFT JOIN silver.olist_product_category_name_translation_dataset pc
         ON p.product_category_name = pc.product_category_name
+
+        PRINT 'Truncating/Inserting silver.olist_customers_dataset';
+        TRUNCATE TABLE silver.olist_customers_dataset
+        INSERT INTO silver.olist_customers_dataset
+        (
+            customer_id,
+		    customer_unique_id,
+		    customer_zip_code_prefix,
+		    customer_city,
+		    customer_state
+        )
+        SELECT 
+            customer_id,
+		    customer_unique_id,
+		    customer_zip_code_prefix,
+		    customer_city,
+		    customer_state
+        FROM bronze.olist_customers_dataset
 
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';

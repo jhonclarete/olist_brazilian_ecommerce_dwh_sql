@@ -89,11 +89,6 @@ SELECT *
 FROM silver.olist_sellers_dataset
 WHERE seller_city COLLATE Latin1_General_CS_AS = UPPER(seller_city);
 
--- Check for non letter seller_city
-SELECT *
-FROM silver.olist_sellers_dataset
-WHERE seller_city NOT LIKE '%[^0-9]%';
-
 
 -- seller_state
 

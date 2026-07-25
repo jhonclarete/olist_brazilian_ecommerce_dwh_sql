@@ -13,8 +13,8 @@ BEGIN
 
 	CREATE TABLE silver.olist_customers_dataset
 	(
-		customer_id NVARCHAR(50),
-		customer_unique_id NVARCHAR(50),
+		customer_id NVARCHAR(32),
+		customer_unique_id NVARCHAR(32),
 		customer_zip_code_prefix NVARCHAR(5),
 		customer_city NVARCHAR(50),
 		customer_state NVARCHAR(2),
@@ -139,7 +139,9 @@ BEGIN
 		seller_zip_code_prefix NVARCHAR(5),
 		seller_city NVARCHAR(50),
 		seller_state NVARCHAR(2),
-		dwh_geolocation_missing_flag INT,
+		dwh_unknown_zip_code_prefix_flag INT,
+		dwh_numeric_city_name_flag INT,
+		dwh_unknown_state_flag INT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
