@@ -60,7 +60,6 @@ FROM silver.olist_sellers_dataset
 WHERE seller_zip_code_prefix LIKE '%[^0-9]%'
 
 -- Check if prefix exists in Geolocation table
--- ERROR
 SELECT * 
 FROM silver.olist_sellers_dataset s
 WHERE NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g WHERE g.geolocation_zip_code_prefix = s.seller_zip_code_prefix)
@@ -88,7 +87,6 @@ FROM silver.olist_sellers_dataset
 WHERE seller_city COLLATE Latin1_General_CS_AS = UPPER(seller_city);
 
 -- Check for invalid character
--- ERROR
 SELECT *
 FROM silver.olist_sellers_dataset
 WHERE seller_city LIKE '%[0-9]%';

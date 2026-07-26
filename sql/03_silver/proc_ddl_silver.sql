@@ -18,6 +18,8 @@ BEGIN
 		customer_zip_code_prefix NVARCHAR(5),
 		customer_city NVARCHAR(50),
 		customer_state NVARCHAR(2),
+		dwh_unknown_zip_code_prefix_flag INT,
+		dwh_city_quality_flag INT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 

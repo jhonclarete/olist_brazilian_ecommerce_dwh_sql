@@ -34,7 +34,6 @@ HAVING COUNT(*) > 1
 
 
 -- customer_unique_id
-
 -- Check Nulls
 SELECT *
 FROM silver.olist_customers_dataset
@@ -62,7 +61,6 @@ WHERE customer_unique_id LIKE '%^[0-9a-f]{32}$%'
 
 
 -- customer_zip_code_prefix
-
 -- Check for NULL Values
 SELECT *
 FROM silver.olist_customers_dataset
@@ -88,9 +86,13 @@ SELECT *
 FROM silver.olist_customers_dataset
 WHERE customer_zip_code_prefix LIKE '%[^0-9]%'
 
+-- Check if prefix exists in Geolocation table
+SELECT * 
+FROM silver.olist_customers_dataset c
+WHERE NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g WHERE g.geolocation_zip_code_prefix = c.customer_zip_code_prefix)
+
 
 -- customer_city
-
 -- Check NULLs
 SELECT *
 FROM silver.olist_customers_dataset
@@ -111,14 +113,13 @@ SELECT *
 FROM silver.olist_customers_dataset
 WHERE customer_city COLLATE Latin1_General_CS_AS = UPPER(customer_city);
 
--- Check if there are mojibake
-SELECT * 
+-- Check for invalid character
+SELECT *
 FROM silver.olist_customers_dataset
-WHERE REGEXP_LIKE(customer_city, '(Ã[a-zA-Z0-9]|â€|æ—)', 'c'); 
+WHERE customer_city LIKE '%[0-9]%';
 
 
 -- customer_state
-
 -- Check NULLs
 SELECT *
 FROM silver.olist_customers_dataset

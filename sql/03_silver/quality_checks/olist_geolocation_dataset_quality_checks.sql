@@ -65,7 +65,6 @@ WHERE geolocation_lat = 0
 
 -- geolocation_lng
 -- Check NULLs
--- ERROR
 SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_lng IS NULL
@@ -104,7 +103,6 @@ FROM silver.olist_geolocation_dataset
 WHERE geolocation_city COLLATE Latin1_General_CS_AS = UPPER(geolocation_city);
 
 -- Check for invalid character
--- ERROR
 SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_city LIKE '%[0-9]%';
