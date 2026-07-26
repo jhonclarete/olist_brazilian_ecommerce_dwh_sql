@@ -21,7 +21,7 @@ BEGIN
         PRINT 'Loading Tables';
         PRINT '------------------------------------------------';
         
-        /*PRINT 'Truncating/Inserting silver.olist_customers_dataset';
+        PRINT 'Truncating/Inserting silver.olist_customers_dataset';
         TRUNCATE TABLE silver.olist_customers_dataset;
         INSERT INTO silver.olist_customers_dataset
         (
@@ -32,12 +32,12 @@ BEGIN
             customer_state
         )
         SELECT DISTINCT
-            TRIM(customer_id),
-            TRIM(customer_unique_id),
+            customer_id,
+            customer_unique_id,
             customer_zip_code_prefix,
-            TRIM(customer_city),
-            TRIM(customer_state)
-        FROM bronze.olist_customers_dataset;*/
+            customer_city,
+            customer_state
+        FROM bronze.olist_customers_dataset;
 
         PRINT 'Truncating/Inserting silver.olist_geolocation_dataset';
         TRUNCATE TABLE silver.olist_geolocation_dataset;
@@ -209,21 +209,32 @@ BEGIN
             product_width_cm
         FROM bronze.olist_products_dataset;*/
 
-        /*PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
+        PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
         TRUNCATE TABLE silver.olist_sellers_dataset;
         INSERT INTO silver.olist_sellers_dataset
         (
             seller_id,
             seller_zip_code_prefix,
             seller_city,
-            seller_state
+            seller_state,
+            dwh_unknown_zip_code_prefix_flag,
+		    dwh_city_quality_flag
         )
         SELECT
-            NULLIF(LTRIM(RTRIM(seller_id)), '') AS seller_id,
-            seller_zip_code_prefix,
-            NULLIF(LTRIM(RTRIM(seller_city)), '') AS seller_city,
-            NULLIF(LTRIM(RTRIM(seller_state)), '') AS seller_state
-        FROM bronze.olist_sellers_dataset;*/
+            s.seller_id,
+            s.seller_zip_code_prefix,
+            s.seller_city,
+            s.seller_state,
+            CASE 
+                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g 
+                    WHERE g.geolocation_zip_code_prefix = s.seller_zip_code_prefix) THEN 1
+                ELSE 0
+            END AS seller_zip_codwh_unknown_zip_code_prefix_flagde_prefix,
+            CASE 
+                WHEN s.seller_city LIKE '%[0-9]%' THEN 1
+                ELSE 0
+            END AS dwh_city_quality_flag
+        FROM bronze.olist_sellers_dataset s;
 
         PRINT 'Truncating/Inserting silver.olist_product_category_name_translation_dataset';
         TRUNCATE TABLE silver.olist_product_category_name_translation_dataset;

@@ -153,8 +153,7 @@ BEGIN
 		seller_city NVARCHAR(50),
 		seller_state NVARCHAR(2),
 		dwh_unknown_zip_code_prefix_flag INT,
-		dwh_numeric_city_name_flag INT,
-		dwh_unknown_state_flag INT,
+		dwh_city_quality_flag INT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 

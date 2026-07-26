@@ -2,7 +2,6 @@ USE olist_brazilian_ecommerce_dwh;
 GO
 
 -- seller_id
-
 -- Check Nulls
 SELECT *
 FROM silver.olist_sellers_dataset
@@ -35,7 +34,6 @@ HAVING COUNT(*) > 1
 
 
 -- seller_zip_code_prefix
-
 -- Check for NULL Values
 SELECT *
 FROM silver.olist_sellers_dataset
@@ -61,9 +59,14 @@ SELECT *
 FROM silver.olist_sellers_dataset
 WHERE seller_zip_code_prefix LIKE '%[^0-9]%'
 
+-- Check if prefix exists in Geolocation table
+-- ERROR
+SELECT * 
+FROM silver.olist_sellers_dataset s
+WHERE NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g WHERE g.geolocation_zip_code_prefix = s.seller_zip_code_prefix)
+
 
 -- geolocation_city
-
 -- Check NULLs
 SELECT *
 FROM silver.olist_sellers_dataset
@@ -79,19 +82,19 @@ SELECT *
 FROM silver.olist_sellers_dataset
 WHERE seller_city != TRIM(seller_city);
 
--- Check if there are mojibake
-SELECT * 
-FROM silver.olist_sellers_dataset
-WHERE REGEXP_LIKE(seller_city, '(Ã[a-zA-Z0-9]|â€|æ—)', 'c'); 
-
 -- Check for upperrcases
 SELECT *
 FROM silver.olist_sellers_dataset
 WHERE seller_city COLLATE Latin1_General_CS_AS = UPPER(seller_city);
 
+-- Check for invalid character
+-- ERROR
+SELECT *
+FROM silver.olist_sellers_dataset
+WHERE seller_city LIKE '%[0-9]%';
+
 
 -- seller_state
-
 -- Check NULLs
 SELECT *
 FROM silver.olist_sellers_dataset

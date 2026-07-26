@@ -2,7 +2,6 @@ USE olist_brazilian_ecommerce_dwh;
 GO
 
 -- customer_id
-
 -- Check Nulls
 SELECT *
 FROM silver.olist_customers_dataset
