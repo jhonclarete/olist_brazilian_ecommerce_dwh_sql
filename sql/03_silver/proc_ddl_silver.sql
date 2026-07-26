@@ -52,6 +52,13 @@ BEGIN
 		shipping_limit_date DATETIME2(0),
 		price DECIMAL(16,2),
 		freight_value DECIMAL(16,2),
+		dwh_is_valid_order_item_key INT,
+        dwh_is_valid_order_item_sequence INT,
+        dwh_is_valid_shipping_limit_date INT,
+        dwh_is_valid_price INT,
+        dwh_is_price_outlier INT,
+        dwh_is_valid_freight_value INT,
+        dwh_is_freight_outlier INT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 

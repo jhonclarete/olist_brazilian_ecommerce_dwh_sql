@@ -229,6 +229,122 @@ BEGIN
             END AS dwh_is_actual_delivery_after_estimated_delivery_flag
         FROM bronze.olist_orders_dataset
 
+        PRINT 'Truncating/Inserting silver.olist_order_items_dataset';
+        TRUNCATE TABLE silver.olist_order_items_dataset;
+        WITH duplicate_check AS
+        (
+            SELECT
+                order_id,
+                order_item_id,
+                COUNT(*) AS duplicate_count
+            FROM bronze.olist_order_items_dataset
+            GROUP BY
+                order_id,
+                order_item_id
+        ),
+
+        sequence_check AS
+        (
+            SELECT
+                *,
+                ROW_NUMBER() OVER
+                (
+                    PARTITION BY order_id
+                    ORDER BY order_item_id
+                ) AS expected_order_item_id
+            FROM bronze.olist_order_items_dataset
+        ),
+
+        price_threshold AS
+        (
+            SELECT DISTINCT
+                PERCENTILE_CONT(0.99)
+                WITHIN GROUP (ORDER BY CAST(price AS DECIMAL(16,2)))
+                OVER () AS p99_price
+            FROM bronze.olist_order_items_dataset
+        ),
+
+        freight_threshold AS
+        (
+            SELECT DISTINCT
+                PERCENTILE_CONT(0.99)
+                WITHIN GROUP (ORDER BY CAST(freight_value AS DECIMAL(16,2)))
+                OVER () AS p99_freight_value
+            FROM bronze.olist_order_items_dataset
+        )
+
+
+        INSERT INTO silver.olist_order_items_dataset
+        (
+            order_id,
+            order_item_id,
+            product_id,
+            seller_id,
+            shipping_limit_date,
+            price,
+            freight_value,
+            dwh_is_valid_order_item_key,
+            dwh_is_valid_order_item_sequence,
+            dwh_is_valid_shipping_limit_date,
+            dwh_is_valid_price,
+            dwh_is_price_outlier,
+            dwh_is_valid_freight_value,
+            dwh_is_freight_outlier
+        )
+        SELECT
+            oi.order_id,
+            oi.order_item_id,
+            oi.product_id,
+            oi.seller_id,
+            CAST(oi.shipping_limit_date AS datetime2) as shipping_limit_date,
+            CAST(oi.price AS decimal(16, 2)) AS price,
+            CAST(oi.freight_value AS decimal(16, 2)) AS freight_value,
+            CASE
+                WHEN dc.duplicate_count = 1
+                THEN 1
+                ELSE 0
+            END AS is_valid_order_item_key,
+            CASE
+                WHEN oi.order_item_id = oi.expected_order_item_id
+                THEN 1
+                ELSE 0
+            END AS is_valid_order_item_sequence,
+            CASE
+                WHEN CAST(oi.shipping_limit_date AS datetime2) IS NOT NULL
+                AND CAST(oi.shipping_limit_date AS datetime2) >= '2016-01-01'
+                AND CAST(oi.shipping_limit_date AS datetime2) <= '2018-12-31'
+                THEN 1
+                ELSE 0
+            END AS is_valid_shipping_limit_date,
+            CASE
+                WHEN CAST(oi.price AS DECIMAL(16,2)) IS NOT NULL
+                AND CAST(oi.price AS DECIMAL(16,2)) >= 0
+                THEN 1
+                ELSE 0
+            END AS is_valid_price,
+            CASE
+                WHEN CAST(oi.price AS DECIMAL(16,2)) > pt.p99_price
+                THEN 1
+                ELSE 0
+            END AS is_price_outlier,
+            CASE
+                WHEN CAST(oi.freight_value AS DECIMAL(16,2)) IS NOT NULL
+                AND CAST(oi.freight_value AS DECIMAL(16,2)) >= 0
+                THEN 1
+                ELSE 0
+            END AS is_valid_freight_value,
+            CASE
+                WHEN CAST(oi.freight_value AS DECIMAL(16,2)) > ft.p99_freight_value
+                THEN 1
+                ELSE 0
+            END AS is_freight_outlier
+        FROM sequence_check oi
+        LEFT JOIN duplicate_check dc
+            ON oi.order_id = dc.order_id
+        AND oi.order_item_id = dc.order_item_id
+        CROSS JOIN price_threshold pt
+        CROSS JOIN freight_threshold ft;
+
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';
         PRINT 'Loading silver Layer is Completed';
