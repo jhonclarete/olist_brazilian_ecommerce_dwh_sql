@@ -21,8 +21,59 @@ BEGIN
         PRINT 'Loading Tables';
         PRINT '------------------------------------------------';
         
+        /*PRINT 'Truncating/Inserting silver.olist_customers_dataset';
+        TRUNCATE TABLE silver.olist_customers_dataset;
+        INSERT INTO silver.olist_customers_dataset
+        (
+            customer_id,
+            customer_unique_id,
+            customer_zip_code_prefix,
+            customer_city,
+            customer_state
+        )
+        SELECT DISTINCT
+            TRIM(customer_id),
+            TRIM(customer_unique_id),
+            customer_zip_code_prefix,
+            TRIM(customer_city),
+            TRIM(customer_state)
+        FROM bronze.olist_customers_dataset;*/
+
         PRINT 'Truncating/Inserting silver.olist_geolocation_dataset';
         TRUNCATE TABLE silver.olist_geolocation_dataset;
+        WITH geolocation_dedup AS
+        (
+            SELECT 
+                geolocation_zip_code_prefix,
+                CAST(geolocation_lat AS DECIMAL(19,15)) AS geolocation_lat,
+                CAST(geolocation_lng AS DECIMAL(19,15)) AS geolocation_lng,
+                LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI AS geolocation_city,
+                geolocation_state,
+                ROW_NUMBER() 
+                OVER
+                (
+                    PARTITION BY 
+                        geolocation_zip_code_prefix,
+                        geolocation_lat,
+                        geolocation_lng,
+                        LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI,
+                        geolocation_state
+                    ORDER BY geolocation_city DESC
+                ) AS row_num,
+                CASE
+                    WHEN TRY_CAST(geolocation_lat AS DECIMAL(19,15)) NOT BETWEEN -33.75 AND 5.27 THEN 1
+                    ELSE 0
+                END AS dwh_geolocation_lat_out_of_range_flag,
+                CASE
+                    WHEN TRY_CAST(geolocation_lng AS DECIMAL(19,15)) NOT BETWEEN -73.99 AND -34.79 THEN 1
+                    ELSE 0
+                END AS dwh_geolocation_lng_out_of_range_flag,
+                CASE
+                    WHEN geolocation_city LIKE '%[0-9]%' THEN 1
+                    ELSE 0
+                END AS dwh_city_quality_flag
+            FROM bronze.olist_geolocation_dataset
+        )
         INSERT INTO silver.olist_geolocation_dataset
         (
             geolocation_zip_code_prefix,
@@ -30,8 +81,9 @@ BEGIN
             geolocation_lng,
             geolocation_city,
             geolocation_state,
-            dwh_geolocation_lat_out_of_range,
-		    dwh_geolocation_lng_out_of_range
+            dwh_geolocation_lat_out_of_range_flag,
+            dwh_geolocation_lng_out_of_range_flag,
+            dwh_city_quality_flag
         )
         SELECT
             geolocation_zip_code_prefix,
@@ -39,77 +91,99 @@ BEGIN
             geolocation_lng,
             geolocation_city,
             geolocation_state,
-            CASE
-                WHEN geolocation_lat NOT BETWEEN -33.75 AND 5.27 THEN 1
-                ELSE 0
-            END AS dwh_geolocation_lat_out_of_range,
-            CASE
-                WHEN geolocation_lng NOT BETWEEN -73.99 AND -28.84 THEN 1
-                ELSE 0
-            END AS dwh_geolocation_lng_out_of_range
-        FROM 
-        (
-            SELECT
-                geolocation_zip_code_prefix,
-                ROUND(CAST(geolocation_lat AS DECIMAL(9,6)),6) AS geolocation_lat,
-                ROUND(CAST(geolocation_lng AS DECIMAL(9,6)),6) AS geolocation_lng,
-                LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI AS geolocation_city,
-                UPPER(TRIM(geolocation_state)) AS geolocation_state
-            FROM bronze.olist_geolocation_dataset
-            GROUP BY
-                geolocation_zip_code_prefix,
-                ROUND(CAST(geolocation_lat AS DECIMAL(9,6)),6),
-                ROUND(CAST(geolocation_lng AS DECIMAL(9,6)),6),
-                LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI,
-                UPPER(TRIM(geolocation_state))
-        )t
+            dwh_geolocation_lat_out_of_range_flag,
+            dwh_geolocation_lng_out_of_range_flag,
+            dwh_city_quality_flag
+        FROM geolocation_dedup
+        WHERE row_num = 1;
 
-        PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
-        TRUNCATE TABLE silver.olist_sellers_dataset;
-        INSERT INTO silver.olist_sellers_dataset
+        /*PRINT 'Truncating/Inserting silver.olist_order_items_dataset';
+        TRUNCATE TABLE silver.olist_order_items_dataset;
+        INSERT INTO silver.olist_order_items_dataset
         (
+            order_id,
+            order_item_id,
+            product_id,
             seller_id,
-            seller_zip_code_prefix,
-            seller_city,
-            seller_state,
-            dwh_unknown_zip_code_prefix_flag,
-            dwh_numeric_city_name_flag,
-            dwh_unknown_state_flag
+            shipping_limit_date,
+            price,
+            freight_value
         )
-        SELECT 
-            s.seller_id,
-            s.seller_zip_code_prefix,
-            LOWER(TRIM(s.seller_city)) COLLATE Latin1_General_100_CI_AI AS seller_city,
-            s.seller_state,
-            CASE 
-                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g WHERE g.geolocation_zip_code_prefix = s.seller_zip_code_prefix) THEN 1
-                ELSE 0
-            END AS dwh_unknown_zip_code_prefix_flag,
-            CASE 
-                WHEN s.seller_city NOT LIKE '%[^0-9]%' THEN 1
-                ELSE 0
-            END AS dwh_numeric_city_name_flag,
-            CASE 
-                WHEN s.seller_state NOT IN ('AC','AL','AP','AM','BA','CE','DF','ES','GO',
-                    'MA','MT','MS','MG','PA','PB','PR','PE','PI',
-                    'RJ','RN','RS','RO','RR','SC','SP','SE','TO') THEN 1
-                ELSE 0
-            END AS dwh_unknown_state_flag
-        FROM bronze.olist_sellers_dataset s
+        SELECT DISTINCT
+            order_id,
+            order_item_id,
+            product_id,
+            seller_id,
+            shipping_limit_date,
+            price,
+            freight_value
+        FROM bronze.olist_order_items_dataset;*/
 
-        PRINT 'Truncating/Inserting silver.olist_product_category_name_translation_dataset';
-        TRUNCATE TABLE silver.olist_product_category_name_translation_dataset;
-        INSERT INTO silver.olist_product_category_name_translation_dataset
+        /*PRINT 'Truncating/Inserting silver.olist_order_payments_dataset';
+        TRUNCATE TABLE silver.olist_order_payments_dataset;
+        INSERT INTO silver.olist_order_payments_dataset
         (
-            product_category_name,
-            product_category_name_english
+            order_id,
+            payment_sequential,
+            payment_type,
+            payment_installments,
+            payment_value
         )
-        SELECT 
-            LOWER(TRIM(product_category_name)) COLLATE Latin1_General_100_CI_AI AS product_category_name,
-            LOWER(TRIM(product_category_name_english)) COLLATE Latin1_General_100_CI_AI AS product_category_name_english
-        FROM bronze.olist_product_category_name_translation_dataset
+        SELECT
+            NULLIF(LTRIM(RTRIM(order_id)), '') AS order_id,
+            payment_sequential,
+            NULLIF(LTRIM(RTRIM(payment_type)), '') AS payment_type,
+            payment_installments,
+            TRY_CAST(payment_value AS DECIMAL(10,2)) AS payment_value
+        FROM bronze.olist_order_payments_dataset;*/
 
-        PRINT 'Truncating/Inserting silver.olist_products_dataset';
+        /*PRINT 'Truncating/Inserting silver.olist_order_payments_dataset';
+        TRUNCATE TABLE silver.olist_order_payments_dataset;
+        INSERT INTO silver.olist_order_reviews_dataset
+        (
+            review_id,
+            order_id,
+            review_score,
+            review_comment_title,
+            review_comment_message,
+            review_creation_date,
+            review_answer_timestamp
+        )
+        SELECT
+            NULLIF(LTRIM(RTRIM(review_id)), '') AS review_id,
+            NULLIF(LTRIM(RTRIM(order_id)), '') AS order_id,
+            review_score,
+            NULLIF(LTRIM(RTRIM(review_comment_title)), '') AS review_comment_title,
+            NULLIF(LTRIM(RTRIM(review_comment_message)), '') AS review_comment_message,
+            TRY_CAST(review_creation_date AS DATETIME) AS review_creation_date,
+            TRY_CAST(review_answer_timestamp AS DATETIME) AS review_answer_timestamp
+        FROM bronze.olist_order_reviews_dataset;*/
+
+        /*PRINT 'Truncating/Inserting silver.olist_orders_dataset';
+        TRUNCATE TABLE silver.olist_orders_dataset;
+        INSERT INTO silver.olist_orders_dataset
+        (
+            order_id,
+            customer_id,
+            order_status,
+            order_purchase_timestamp,
+            order_approved_at,
+            order_delivered_carrier_date,
+            order_delivered_customer_date,
+            order_estimated_delivery_date
+        )
+        SELECT
+            NULLIF(LTRIM(RTRIM(order_id)), '') AS order_id,
+            NULLIF(LTRIM(RTRIM(customer_id)), '') AS customer_id,
+            NULLIF(LTRIM(RTRIM(order_status)), '') AS order_status,
+            TRY_CAST(order_purchase_timestamp AS DATETIME) AS order_purchase_timestamp,
+            TRY_CAST(order_approved_at AS DATETIME) AS order_approved_at,
+            TRY_CAST(order_delivered_carrier_date AS DATETIME) AS order_delivered_carrier_date,
+            TRY_CAST(order_delivered_customer_date AS DATETIME) AS order_delivered_customer_date,
+            TRY_CAST(order_estimated_delivery_date AS DATETIME) AS order_estimated_delivery_date
+        FROM bronze.olist_orders_dataset;*/
+
+        /*PRINT 'Truncating/Inserting silver.olist_products_dataset';
         TRUNCATE TABLE silver.olist_products_dataset;
         INSERT INTO silver.olist_products_dataset
         (
@@ -121,229 +195,47 @@ BEGIN
             product_weight_g,
             product_length_cm,
             product_height_cm,
-            product_width_cm,
-            dwh_category_name_missing_flag,
-            dwh_category_translation_missing_flag,
-            dwh_weight_outlier_flag,
-            dwh_dimension_outlier_flag,
-            dwh_photo_quantity_outlier_flag,
-            dwh_name_length_outlier_flag
-        )
-        SELECT 
-            p.product_id,
-            CASE 
-                WHEN p.product_category_name IS NULL THEN 'uncategorized'
-                ELSE  p.product_category_name
-            END AS product_category_name,
-            CAST(p.product_name_lenght AS INT) AS product_name_lenght,
-            CAST(p.product_description_lenght AS INT) AS product_description_lenght,
-            CAST(p.product_photos_qty AS INT) AS product_photos_qty,
-            CAST(p.product_weight_g AS INT) AS product_weight_g,
-            ROUND(CAST(p.product_length_cm AS DECIMAL(10,2)), 2) AS product_length_cm,
-            ROUND(CAST(p.product_height_cm AS DECIMAL(10,2)), 2) AS product_height_cm,
-            ROUND(CAST(p.product_width_cm AS DECIMAL(10,2)), 2) AS product_width_cm,
-            CASE 
-                WHEN p.product_category_name IS NULL THEN 1
-                ELSE 0
-            END AS dwh_category_name_missing_flag,
-            CASE 
-                WHEN pc.product_category_name IS NULL THEN 1
-                ELSE 0
-            END AS dwh_category_translation_missing_flag,
-            CASE 
-                WHEN p.product_weight_g IS NOT NULL AND CAST(p.product_weight_g AS INT) <= 0 THEN 1
-                ELSE 0
-            END AS dwh_weight_outlier_flag,
-            CASE 
-                WHEN p.product_length_cm IS NOT NULL AND ROUND(CAST(p.product_length_cm AS DECIMAL(10,2)), 2) <= 0 THEN 1
-                WHEN p.product_height_cm IS NOT NULL AND ROUND(CAST(p.product_height_cm AS DECIMAL(10,2)), 2) <= 0 THEN 1
-                WHEN p.product_width_cm IS NOT NULL AND ROUND(CAST(p.product_width_cm AS DECIMAL(10,2)), 2) <= 0 THEN 1
-                ELSE 0
-            END AS dwh_dimension_outlier_flag,
-            CASE 
-                WHEN p.product_photos_qty IS NOT NULL AND CAST(p.product_photos_qty AS INT) < 0 THEN 1
-                ELSE 0
-            END AS dwh_photo_quantity_outlier_flag,
-            CASE 
-                WHEN p.product_name_lenght IS NOT NULL AND CAST(p.product_name_lenght AS INT) <= 0 THEN 1
-                ELSE 0
-            END AS dwh_name_length_outlier_flag
-        FROM bronze.olist_products_dataset p
-        LEFT JOIN silver.olist_product_category_name_translation_dataset pc
-        ON p.product_category_name = pc.product_category_name
-
-        PRINT 'Truncating/Inserting silver.olist_customers_dataset';
-        TRUNCATE TABLE silver.olist_customers_dataset
-        INSERT INTO silver.olist_customers_dataset
-        (
-            customer_id,
-		    customer_unique_id,
-		    customer_zip_code_prefix,
-		    customer_city,
-		    customer_state
-        )
-        SELECT 
-            customer_id,
-		    customer_unique_id,
-		    customer_zip_code_prefix,
-		    customer_city,
-		    customer_state
-        FROM bronze.olist_customers_dataset
-
-        PRINT 'Truncating/Inserting silver.olist_orders_dataset';
-        TRUNCATE TABLE silver.olist_orders_dataset;
-        INSERT INTO silver.olist_orders_dataset
-        (
-            order_id,
-            customer_id,
-            order_status,
-            order_purchase_timestamp,
-            order_approved_at,
-            order_delivered_carrier_date,
-            order_delivered_customer_date,
-            order_estimated_delivery_date,
-            dwh_is_approval_after_carrier_delivery_flag,
-            dwh_is_carrier_delivery_after_customer_delivery_flag,
-            dwh_is_actual_delivery_after_estimated_delivery_flag
-        )
-        SELECT 
-            order_id,
-            customer_id,
-            LOWER(TRIM(order_status)) AS order_status,
-            CAST(order_purchase_timestamp AS DATETIME2(0)) AS order_purchase_timestamp,
-            CAST(order_approved_at AS DATETIME2(0)) AS order_approved_at,
-            CAST(order_delivered_carrier_date AS DATETIME2(0)) AS order_delivered_carrier_date,
-            CAST(order_delivered_customer_date AS DATETIME2(0)) AS order_delivered_customer_date,
-            CAST(order_estimated_delivery_date AS DATETIME2(0)) AS order_estimated_delivery_date,
-            CASE 
-                WHEN order_approved_at > order_delivered_carrier_date THEN 1
-                ELSE 0
-            END AS dwh_is_approval_after_carrier_delivery_flag,
-            CASE 
-                WHEN order_delivered_carrier_date > order_delivered_customer_date THEN 1
-                ELSE 0
-            END AS dwh_is_carrier_delivery_after_customer_delivery_flag,
-            CASE 
-                WHEN order_delivered_customer_date > order_estimated_delivery_date THEN 1
-                ELSE 0
-            END AS dwh_is_actual_delivery_after_estimated_delivery_flag
-        FROM bronze.olist_orders_dataset
-
-        PRINT 'Truncating/Inserting silver.olist_order_items_dataset';
-        TRUNCATE TABLE silver.olist_order_items_dataset;
-        WITH duplicate_check AS
-        (
-            SELECT
-                order_id,
-                order_item_id,
-                COUNT(*) AS duplicate_count
-            FROM bronze.olist_order_items_dataset
-            GROUP BY
-                order_id,
-                order_item_id
-        ),
-
-        sequence_check AS
-        (
-            SELECT
-                *,
-                ROW_NUMBER() OVER
-                (
-                    PARTITION BY order_id
-                    ORDER BY order_item_id
-                ) AS expected_order_item_id
-            FROM bronze.olist_order_items_dataset
-        ),
-
-        price_threshold AS
-        (
-            SELECT DISTINCT
-                PERCENTILE_CONT(0.99)
-                WITHIN GROUP (ORDER BY CAST(price AS DECIMAL(16,2)))
-                OVER () AS p99_price
-            FROM bronze.olist_order_items_dataset
-        ),
-
-        freight_threshold AS
-        (
-            SELECT DISTINCT
-                PERCENTILE_CONT(0.99)
-                WITHIN GROUP (ORDER BY CAST(freight_value AS DECIMAL(16,2)))
-                OVER () AS p99_freight_value
-            FROM bronze.olist_order_items_dataset
-        )
-
-
-        INSERT INTO silver.olist_order_items_dataset
-        (
-            order_id,
-            order_item_id,
-            product_id,
-            seller_id,
-            shipping_limit_date,
-            price,
-            freight_value,
-            dwh_is_valid_order_item_key,
-            dwh_is_valid_order_item_sequence,
-            dwh_is_valid_shipping_limit_date,
-            dwh_is_valid_price,
-            dwh_is_price_outlier,
-            dwh_is_valid_freight_value,
-            dwh_is_freight_outlier
+            product_width_cm
         )
         SELECT
-            oi.order_id,
-            oi.order_item_id,
-            oi.product_id,
-            oi.seller_id,
-            CAST(oi.shipping_limit_date AS datetime2) as shipping_limit_date,
-            CAST(oi.price AS decimal(16, 2)) AS price,
-            CAST(oi.freight_value AS decimal(16, 2)) AS freight_value,
-            CASE
-                WHEN dc.duplicate_count = 1
-                THEN 1
-                ELSE 0
-            END AS is_valid_order_item_key,
-            CASE
-                WHEN oi.order_item_id = oi.expected_order_item_id
-                THEN 1
-                ELSE 0
-            END AS is_valid_order_item_sequence,
-            CASE
-                WHEN CAST(oi.shipping_limit_date AS datetime2) IS NOT NULL
-                AND CAST(oi.shipping_limit_date AS datetime2) >= '2016-01-01'
-                AND CAST(oi.shipping_limit_date AS datetime2) <= '2018-12-31'
-                THEN 1
-                ELSE 0
-            END AS is_valid_shipping_limit_date,
-            CASE
-                WHEN CAST(oi.price AS DECIMAL(16,2)) IS NOT NULL
-                AND CAST(oi.price AS DECIMAL(16,2)) >= 0
-                THEN 1
-                ELSE 0
-            END AS is_valid_price,
-            CASE
-                WHEN CAST(oi.price AS DECIMAL(16,2)) > pt.p99_price
-                THEN 1
-                ELSE 0
-            END AS is_price_outlier,
-            CASE
-                WHEN CAST(oi.freight_value AS DECIMAL(16,2)) IS NOT NULL
-                AND CAST(oi.freight_value AS DECIMAL(16,2)) >= 0
-                THEN 1
-                ELSE 0
-            END AS is_valid_freight_value,
-            CASE
-                WHEN CAST(oi.freight_value AS DECIMAL(16,2)) > ft.p99_freight_value
-                THEN 1
-                ELSE 0
-            END AS is_freight_outlier
-        FROM sequence_check oi
-        LEFT JOIN duplicate_check dc
-            ON oi.order_id = dc.order_id
-        AND oi.order_item_id = dc.order_item_id
-        CROSS JOIN price_threshold pt
-        CROSS JOIN freight_threshold ft;
+            NULLIF(LTRIM(RTRIM(product_id)), '') AS product_id,
+            NULLIF(LTRIM(RTRIM(product_category_name)), '') AS product_category_name,
+            product_name_lenght,
+            product_description_lenght,
+            product_photos_qty,
+            product_weight_g,
+            product_length_cm,
+            product_height_cm,
+            product_width_cm
+        FROM bronze.olist_products_dataset;*/
+
+        /*PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
+        TRUNCATE TABLE silver.olist_sellers_dataset;
+        INSERT INTO silver.olist_sellers_dataset
+        (
+            seller_id,
+            seller_zip_code_prefix,
+            seller_city,
+            seller_state
+        )
+        SELECT
+            NULLIF(LTRIM(RTRIM(seller_id)), '') AS seller_id,
+            seller_zip_code_prefix,
+            NULLIF(LTRIM(RTRIM(seller_city)), '') AS seller_city,
+            NULLIF(LTRIM(RTRIM(seller_state)), '') AS seller_state
+        FROM bronze.olist_sellers_dataset;*/
+
+        /*PRINT 'Truncating/Inserting silver.product_category_name_translation';
+        TRUNCATE TABLE silver.product_category_name_translation;
+        INSERT INTO silver.olist_product_category_name_translation_dataset
+        (
+            product_category_name,
+            product_category_name_english
+        )
+        SELECT
+            NULLIF(LTRIM(RTRIM(product_category_name)), '') AS product_category_name,
+            NULLIF(LTRIM(RTRIM(product_category_name_english)), '') AS product_category_name_english
+        FROM bronze.olist_product_category_name_translation_dataset;*/
 
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';

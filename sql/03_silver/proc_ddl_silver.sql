@@ -29,12 +29,13 @@ BEGIN
 	CREATE TABLE silver.olist_geolocation_dataset
 	(
 		geolocation_zip_code_prefix NVARCHAR(5),
-		geolocation_lat DECIMAL(9, 6),
-		geolocation_lng DECIMAL(9, 6),
+		geolocation_lat DECIMAL(19, 15),
+		geolocation_lng DECIMAL(19, 15),
 		geolocation_city NVARCHAR(50),
 		geolocation_state NVARCHAR(2),
-		dwh_geolocation_lat_out_of_range INT,
-		dwh_geolocation_lng_out_of_range INT,
+		dwh_geolocation_lat_out_of_range_flag INT,
+		dwh_geolocation_lng_out_of_range_flag INT,
+		dwh_city_quality_flag INT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 

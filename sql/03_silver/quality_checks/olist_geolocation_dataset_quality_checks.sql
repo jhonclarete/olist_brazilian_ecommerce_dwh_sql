@@ -2,7 +2,6 @@ USE olist_brazilian_ecommerce_dwh;
 GO
 
 -- geolocation_zip_code_prefix
-
 -- Check for NULL Values
 SELECT *
 FROM silver.olist_geolocation_dataset
@@ -28,43 +27,62 @@ SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_zip_code_prefix LIKE '%[^0-9]%'
 
--- Count duplicate ZIP prefixes
-SELECT 
+-- Check duplicate record
+SELECT
     geolocation_zip_code_prefix,
-    ROUND(CAST(geolocation_lat AS DECIMAL(9,6)), 6) AS geolocation_lat,
-    ROUND(CAST(geolocation_lng AS DECIMAL(9,6)), 6) AS geolocation_lng,
-    LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI AS geolocation_city,
+    geolocation_lat,
+    geolocation_lng,
+    LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI AS city_normalized,
     geolocation_state,
-    COUNT(*)
+    COUNT(*) AS cnt
 FROM silver.olist_geolocation_dataset
 GROUP BY
     geolocation_zip_code_prefix,
-    ROUND(CAST(geolocation_lat AS DECIMAL(9,6)), 6),
-    ROUND(CAST(geolocation_lng AS DECIMAL(9,6)), 6),
+    geolocation_lat,
+    geolocation_lng,
     LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI,
     geolocation_state
-HAVING COUNT(*) > 1
-ORDER BY geolocation_zip_code_prefix;
+HAVING COUNT(*) > 1;
 
 
 -- geolocation_lat
-
 -- Check NULLs
 SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_lat IS NULL
 
+-- Check Lat range
+SELECT *
+FROM silver.olist_geolocation_dataset
+WHERE geolocation_lat < -33.75
+OR geolocation_lat > 5.27;
+
+-- Check 0 coordinate
+SELECT *
+FROM silver.olist_geolocation_dataset
+WHERE geolocation_lat = 0
+
 
 -- geolocation_lng
-
 -- Check NULLs
+-- ERROR
 SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_lng IS NULL
 
+-- Check Lng range
+SELECT *
+FROM silver.olist_geolocation_dataset
+WHERE geolocation_lng < -73.99
+OR geolocation_lng > -34.79;
+
+-- Check 0 coordinate
+SELECT *
+FROM silver.olist_geolocation_dataset
+WHERE geolocation_lng = 0
+
 
 -- geolocation_city
-
 -- Check NULLs
 SELECT *
 FROM silver.olist_geolocation_dataset
@@ -85,14 +103,14 @@ SELECT *
 FROM silver.olist_geolocation_dataset
 WHERE geolocation_city COLLATE Latin1_General_CS_AS = UPPER(geolocation_city);
 
--- Check if there are mojibake
-SELECT * 
+-- Check for invalid character
+-- ERROR
+SELECT *
 FROM silver.olist_geolocation_dataset
-WHERE REGEXP_LIKE(geolocation_city, '(Ã[a-zA-Z0-9]|â€|æ—)', 'c'); 
+WHERE geolocation_city LIKE '%[0-9]%';
 
 
 -- geolocation_state
-
 -- Check NULLs
 SELECT *
 FROM silver.olist_geolocation_dataset
