@@ -225,17 +225,17 @@ BEGIN
             NULLIF(LTRIM(RTRIM(seller_state)), '') AS seller_state
         FROM bronze.olist_sellers_dataset;*/
 
-        /*PRINT 'Truncating/Inserting silver.product_category_name_translation';
-        TRUNCATE TABLE silver.product_category_name_translation;
+        PRINT 'Truncating/Inserting silver.olist_product_category_name_translation_dataset';
+        TRUNCATE TABLE silver.olist_product_category_name_translation_dataset;
         INSERT INTO silver.olist_product_category_name_translation_dataset
         (
             product_category_name,
             product_category_name_english
         )
         SELECT
-            NULLIF(LTRIM(RTRIM(product_category_name)), '') AS product_category_name,
-            NULLIF(LTRIM(RTRIM(product_category_name_english)), '') AS product_category_name_english
-        FROM bronze.olist_product_category_name_translation_dataset;*/
+            product_category_name,
+            product_category_name_english
+        FROM bronze.olist_product_category_name_translation_dataset;
 
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';
