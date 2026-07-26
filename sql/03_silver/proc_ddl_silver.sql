@@ -33,6 +33,8 @@ BEGIN
 		geolocation_lng DECIMAL(9, 6),
 		geolocation_city NVARCHAR(50),
 		geolocation_state NVARCHAR(2),
+		dwh_geolocation_lat_out_of_range INT,
+		dwh_geolocation_lng_out_of_range INT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
@@ -92,14 +94,17 @@ BEGIN
 
 	CREATE TABLE silver.olist_orders_dataset
 	(
-		order_id NVARCHAR(50),
-		customer_id NVARCHAR(50),
+		order_id NVARCHAR(32),
+		customer_id NVARCHAR(32),
 		order_status NVARCHAR(20),
 		order_purchase_timestamp DATETIME2(0),
 		order_approved_at DATETIME2(0),
 		order_delivered_carrier_date DATETIME2(0),
 		order_delivered_customer_date DATETIME2(0),
 		order_estimated_delivery_date DATETIME2(0),
+		dwh_is_approval_after_carrier_delivery_flag INT,
+		dwh_is_carrier_delivery_after_customer_delivery_flag INT,
+		dwh_is_actual_delivery_after_estimated_delivery_flag INT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 

@@ -29,46 +29,40 @@ BEGIN
             geolocation_lat,
             geolocation_lng,
             geolocation_city,
-            geolocation_state
+            geolocation_state,
+            dwh_geolocation_lat_out_of_range,
+		    dwh_geolocation_lng_out_of_range
         )
         SELECT
             geolocation_zip_code_prefix,
             geolocation_lat,
             geolocation_lng,
             geolocation_city,
-            geolocation_state
+            geolocation_state,
+            CASE
+                WHEN geolocation_lat NOT BETWEEN -33.75 AND 5.27 THEN 1
+                ELSE 0
+            END AS dwh_geolocation_lat_out_of_range,
+            CASE
+                WHEN geolocation_lng NOT BETWEEN -73.99 AND -28.84 THEN 1
+                ELSE 0
+            END AS dwh_geolocation_lng_out_of_range
         FROM 
         (
             SELECT
                 geolocation_zip_code_prefix,
-                ROUND(CAST(geolocation_lat AS DECIMAL(9,6)), 6) AS geolocation_lat,
-                ROUND(CAST(geolocation_lng AS DECIMAL(9,6)), 6) AS geolocation_lng,
-                LOWER(TRANSLATE(
-                    TRIM(geolocation_city), 
-                    N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
-                    N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc'
-                )) AS geolocation_city,
-                UPPER(TRIM(geolocation_state)) AS geolocation_state,
-                ROW_NUMBER() 
-                OVER
-                (
-                    PARTITION BY 
-                        geolocation_zip_code_prefix, 
-                        ROUND(CAST(geolocation_lat AS DECIMAL(9,6)), 6),
-                        ROUND(CAST(geolocation_lng AS DECIMAL(9,6)), 6),
-                        LOWER(TRANSLATE(
-                            TRIM(geolocation_city), 
-                            N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
-                            N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc')), 
-                        UPPER(TRIM(geolocation_state))
-                    ORDER BY 
-                        (SELECT NULL)
-                ) AS row_num
+                ROUND(CAST(geolocation_lat AS DECIMAL(9,6)),6) AS geolocation_lat,
+                ROUND(CAST(geolocation_lng AS DECIMAL(9,6)),6) AS geolocation_lng,
+                LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI AS geolocation_city,
+                UPPER(TRIM(geolocation_state)) AS geolocation_state
             FROM bronze.olist_geolocation_dataset
+            GROUP BY
+                geolocation_zip_code_prefix,
+                ROUND(CAST(geolocation_lat AS DECIMAL(9,6)),6),
+                ROUND(CAST(geolocation_lng AS DECIMAL(9,6)),6),
+                LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI,
+                UPPER(TRIM(geolocation_state))
         )t
-        WHERE row_num = 1
-        AND (geolocation_lat BETWEEN -33.75 AND 5.27) 
-        AND (geolocation_lng BETWEEN -73.99 AND -28.84)
 
         PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
         TRUNCATE TABLE silver.olist_sellers_dataset;
@@ -83,29 +77,25 @@ BEGIN
             dwh_unknown_state_flag
         )
         SELECT 
-            seller_id,
-            seller_zip_code_prefix,
-            LOWER(TRANSLATE(
-                    TRIM(seller_city), 
-                    N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
-                    N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc'
-                )) AS seller_city,
-            seller_state,
+            s.seller_id,
+            s.seller_zip_code_prefix,
+            LOWER(TRIM(s.seller_city)) COLLATE Latin1_General_100_CI_AI AS seller_city,
+            s.seller_state,
             CASE 
-                WHEN seller_zip_code_prefix NOT IN (SELECT geolocation_zip_code_prefix FROM silver.olist_geolocation_dataset) THEN 1
+                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g WHERE g.geolocation_zip_code_prefix = s.seller_zip_code_prefix) THEN 1
                 ELSE 0
             END AS dwh_unknown_zip_code_prefix_flag,
             CASE 
-                WHEN seller_city NOT LIKE '%[^0-9]%' THEN 1
+                WHEN s.seller_city NOT LIKE '%[^0-9]%' THEN 1
                 ELSE 0
             END AS dwh_numeric_city_name_flag,
             CASE 
-                WHEN seller_state NOT IN ('AC','AL','AP','AM','BA','CE','DF','ES','GO',
+                WHEN s.seller_state NOT IN ('AC','AL','AP','AM','BA','CE','DF','ES','GO',
                     'MA','MT','MS','MG','PA','PB','PR','PE','PI',
                     'RJ','RN','RS','RO','RR','SC','SP','SE','TO') THEN 1
                 ELSE 0
             END AS dwh_unknown_state_flag
-        FROM bronze.olist_sellers_dataset
+        FROM bronze.olist_sellers_dataset s
 
         PRINT 'Truncating/Inserting silver.olist_product_category_name_translation_dataset';
         TRUNCATE TABLE silver.olist_product_category_name_translation_dataset;
@@ -115,16 +105,8 @@ BEGIN
             product_category_name_english
         )
         SELECT 
-            LOWER(TRANSLATE(
-                    TRIM(product_category_name), 
-                    N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
-                    N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc'
-                )) AS product_category_name,
-            LOWER(TRANSLATE(
-                    TRIM(product_category_name_english), 
-                    N'áàâãäåāăąÁÀÂÃÄÅĀĂĄéèêëēĕėęěÉÈÊËĒĔĖĘĚíìîïīĭįÍÌÎÏĪĬĮóòôõöøōŏőÓÒÔÕÖØŌŎŐúùûüūŭůűųÚÙÛÜŪŬŮŰŲñńņňÑŃŅŇçćĉċčÇĆĈĊČ', 
-                    N'aaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeiiiiiiiiiiiiiioooooooooooooooooouuuuuuuuuuuuuuuuunnnnunnnncccccccccc'
-                )) AS product_category_name_english
+            LOWER(TRIM(product_category_name)) COLLATE Latin1_General_100_CI_AI AS product_category_name,
+            LOWER(TRIM(product_category_name_english)) COLLATE Latin1_General_100_CI_AI AS product_category_name_english
         FROM bronze.olist_product_category_name_translation_dataset
 
         PRINT 'Truncating/Inserting silver.olist_products_dataset';
@@ -207,6 +189,45 @@ BEGIN
 		    customer_city,
 		    customer_state
         FROM bronze.olist_customers_dataset
+
+        PRINT 'Truncating/Inserting silver.olist_orders_dataset';
+        TRUNCATE TABLE silver.olist_orders_dataset;
+        INSERT INTO silver.olist_orders_dataset
+        (
+            order_id,
+            customer_id,
+            order_status,
+            order_purchase_timestamp,
+            order_approved_at,
+            order_delivered_carrier_date,
+            order_delivered_customer_date,
+            order_estimated_delivery_date,
+            dwh_is_approval_after_carrier_delivery_flag,
+            dwh_is_carrier_delivery_after_customer_delivery_flag,
+            dwh_is_actual_delivery_after_estimated_delivery_flag
+        )
+        SELECT 
+            order_id,
+            customer_id,
+            LOWER(TRIM(order_status)) AS order_status,
+            CAST(order_purchase_timestamp AS DATETIME2(0)) AS order_purchase_timestamp,
+            CAST(order_approved_at AS DATETIME2(0)) AS order_approved_at,
+            CAST(order_delivered_carrier_date AS DATETIME2(0)) AS order_delivered_carrier_date,
+            CAST(order_delivered_customer_date AS DATETIME2(0)) AS order_delivered_customer_date,
+            CAST(order_estimated_delivery_date AS DATETIME2(0)) AS order_estimated_delivery_date,
+            CASE 
+                WHEN order_approved_at > order_delivered_carrier_date THEN 1
+                ELSE 0
+            END AS dwh_is_approval_after_carrier_delivery_flag,
+            CASE 
+                WHEN order_delivered_carrier_date > order_delivered_customer_date THEN 1
+                ELSE 0
+            END AS dwh_is_carrier_delivery_after_customer_delivery_flag,
+            CASE 
+                WHEN order_delivered_customer_date > order_estimated_delivery_date THEN 1
+                ELSE 0
+            END AS dwh_is_actual_delivery_after_estimated_delivery_flag
+        FROM bronze.olist_orders_dataset
 
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';
