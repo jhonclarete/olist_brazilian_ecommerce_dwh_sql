@@ -2,7 +2,6 @@ USE olist_brazilian_ecommerce_dwh;
 GO
 
 -- order_id
-
 -- Check for Nulls
 SELECT *
 FROM silver.olist_orders_dataset
@@ -35,7 +34,6 @@ HAVING COUNT(*) > 1
 
 
 -- customer_id
-
 -- Check for Nulls
 SELECT *
 FROM silver.olist_orders_dataset
@@ -68,12 +66,11 @@ HAVING COUNT(*) > 1
 
 -- Check if customer_id not exists in customer dataset
 SELECT *
-FROM silver.olist_orders_dataset
-WHERE customer_id NOT IN (SELECT customer_id FROM silver.olist_customers_dataset)
+FROM silver.olist_orders_dataset o
+WHERE NOT EXISTS (SELECT 1 FROM silver.olist_customers_dataset c WHERE c.customer_id = o.customer_id)
 
 
 -- order_status
-
 -- Check for Nulls
 SELECT *
 FROM silver.olist_orders_dataset
@@ -111,85 +108,85 @@ WHERE TRY_CAST(order_purchase_timestamp AS DATETIME2) IS NULL
 -- Should not be before Olist business start date (2016)
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE YEAR(CAST(order_purchase_timestamp AS DATETIME2)) < 2016
+WHERE YEAR(order_purchase_timestamp) < 2016
 
 -- Cannot be greater than current date
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_purchase_timestamp AS DATETIME2) > GETDATE()
+WHERE order_purchase_timestamp > GETDATE()
 
 
 -- order_approved_at
-
 -- Must be >= order_purchase_timestamp
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_approved_at AS DATETIME2) < CAST(order_purchase_timestamp AS DATETIME2)
+WHERE order_approved_at < order_purchase_timestamp
 
 -- Cannot be greater than current date
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_approved_at AS DATETIME2) > GETDATE()
+WHERE order_approved_at > GETDATE()
 
 -- Not Null if status is approved
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE order_approved_at = 'approved' AND order_approved_at IS NULL
+WHERE order_status = 'approved' AND order_approved_at IS NULL
 
 -- Check for datetime format
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE TRY_CAST(order_approved_at AS DATETIME2) IS NULL
+WHERE TRY_CAST(order_approved_at AS DATETIME2) IS NULL AND order_status = 'approved'
 
 
 -- order_delivered_carrier_date
-
--- Should exist when status is shipped or delivered
+-- Should exist when status is delivered or shipped
+-- ERROR
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE (order_delivered_carrier_date = 'shipped' OR order_delivered_carrier_date = 'delivered') AND order_approved_at IS NULL
+WHERE (order_status = 'delivered' OR order_status = 'shipped') AND order_delivered_carrier_date IS NULL
 
 -- Must be >= order_approved_at
+-- ERROR
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_delivered_carrier_date AS DATETIME2) < CAST(order_approved_at AS DATETIME2)
+WHERE order_delivered_carrier_date < order_approved_at
 
 -- Cannot be greater than current date
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_delivered_carrier_date AS DATETIME2) > GETDATE()
+WHERE order_delivered_carrier_date > GETDATE()
 
 -- Check for datetime format
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE TRY_CAST(order_delivered_carrier_date AS DATETIME2) IS NULL
+WHERE order_delivered_carrier_date IS NULL AND (order_status = 'delivered' OR order_status = 'shipped')
 
 
 -- order_delivered_customer_date
-
 -- Should exist only when status = delivered
+-- ERROR
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE (order_delivered_customer_date = 'delivered') AND order_approved_at IS NULL
+WHERE (order_status = 'delivered') AND order_delivered_customer_date IS NULL
 
 -- Must be >= order_delivered_carrier_date
+-- ERROR
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_delivered_customer_date AS DATETIME2) < CAST(order_delivered_carrier_date AS DATETIME2)
+WHERE order_delivered_customer_date < order_delivered_carrier_date
 
 -- Cannot be greater than current date
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_delivered_customer_date AS DATETIME2) > GETDATE()
+WHERE order_delivered_customer_date > GETDATE()
 
 -- Delivery date should not be before purchase date
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_delivered_customer_date AS DATETIME2) < CAST(order_purchase_timestamp AS DATETIME2)
+WHERE order_delivered_customer_date < order_purchase_timestamp
 
 
 -- order_estimated_delivery_date
-
 -- Must not be NULL
 SELECT *
 FROM silver.olist_orders_dataset
@@ -198,12 +195,12 @@ WHERE order_estimated_delivery_date IS NULL
 -- Should be >= purchase date
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_estimated_delivery_date AS DATETIME2) < CAST(order_purchase_timestamp AS DATETIME2)
+WHERE order_estimated_delivery_date < order_purchase_timestamp
 
--- Estimated delivery should be before or equal to actual delivery (when delivered)
+-- Estimated delivery >= Actual delivery (when delivered)
 SELECT *
 FROM silver.olist_orders_dataset
-WHERE CAST(order_estimated_delivery_date AS DATETIME2) < CAST(order_delivered_customer_date AS DATETIME2)
+WHERE order_estimated_delivery_date < order_delivered_customer_date
 
 -- Check for datetime format
 SELECT *

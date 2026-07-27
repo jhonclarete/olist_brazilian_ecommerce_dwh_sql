@@ -18,8 +18,14 @@ BEGIN
 		customer_zip_code_prefix NVARCHAR(5),
 		customer_city NVARCHAR(50),
 		customer_state NVARCHAR(2),
-		dwh_unknown_zip_code_prefix_flag INT,
-		dwh_city_quality_flag INT,
+		dwh_missing_customer_id_flag BIT,
+		dwh_missing_customer_unique_id_flag BIT,
+		dwh_missing_zip_code_prefix_flag BIT,
+		dwh_missing_city_flag BIT,
+		dwh_missing_state_flag BIT,
+		dwh_zip_code_prefix_not_in_geolocation_flag BIT,
+		dwh_city_quality_flag BIT,
+		dwh_invalid_state_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
@@ -35,9 +41,15 @@ BEGIN
 		geolocation_lng DECIMAL(19, 15),
 		geolocation_city NVARCHAR(50),
 		geolocation_state NVARCHAR(2),
-		dwh_geolocation_lat_out_of_range_flag INT,
-		dwh_geolocation_lng_out_of_range_flag INT,
-		dwh_city_quality_flag INT,
+		dwh_missing_zip_code_prefix_flag BIT,
+		dwh_missing_lat_flag BIT,
+		dwh_missing_lng_flag BIT,
+		dwh_missing_city_flag BIT,
+		dwh_missing_state_flag BIT,
+		dwh_invalid_coordinate_flag BIT,
+		dwh_outside_brazil_flag BIT,
+		dwh_invalid_state_flag BIT,
+		dwh_city_quality_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
@@ -55,13 +67,14 @@ BEGIN
 		shipping_limit_date DATETIME2(0),
 		price DECIMAL(16,2),
 		freight_value DECIMAL(16,2),
-		dwh_is_valid_order_item_key INT,
-        dwh_is_valid_order_item_sequence INT,
-        dwh_is_valid_shipping_limit_date INT,
-        dwh_is_valid_price INT,
-        dwh_is_price_outlier INT,
-        dwh_is_valid_freight_value INT,
-        dwh_is_freight_outlier INT,
+		dwh_missing_order_id_flag BIT,
+		dwh_missing_order_item_id_flag BIT,
+		dwh_missing_product_id_flag BIT,
+		dwh_missing_seller_id_flag BIT,
+		dwh_invalid_price_flag BIT,
+		dwh_invalid_freight_value_flag BIT,
+		dwh_product_id_not_in_product_flag BIT,
+		dwh_seller_id_not_in_seller_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
@@ -77,6 +90,11 @@ BEGIN
 		payment_type NVARCHAR(20),
 		payment_installments INT,
 		payment_value DECIMAL(16,2),
+		dwh_missing_order_id_flag BIT,
+        dwh_invalid_payment_type_flag BIT,
+        dwh_invalid_installments_flag BIT,
+        dwh_invalid_payment_flag BIT,
+        dwh_order_id_not_in_orders_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
@@ -112,9 +130,20 @@ BEGIN
 		order_delivered_carrier_date DATETIME2(0),
 		order_delivered_customer_date DATETIME2(0),
 		order_estimated_delivery_date DATETIME2(0),
-		dwh_is_approval_after_carrier_delivery_flag INT,
-		dwh_is_carrier_delivery_after_customer_delivery_flag INT,
-		dwh_is_actual_delivery_after_estimated_delivery_flag INT,
+		dwh_missing_order_id_flag BIT,
+		dwh_missing_customer_id_flag BIT,
+		dwh_missing_order_status_flag BIT,
+		dwh_customer_id_not_in_customer_table_flag BIT,
+		dwh_invalid_order_status_flag BIT,
+		dwh_missing_purchase_date_flag BIT,
+        dwh_missing_estimated_delivery_date_flag BIT,
+        dwh_payment_not_approved_flag BIT,
+        dwh_not_shipped_flag BIT,
+        dwh_not_delivered_flag BIT,
+        dwh_delivered_flag BIT,
+        dwh_late_delivery_flag BIT,
+        dwh_early_delivery_flag BIT,
+        dwh_on_time_delivery_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
@@ -134,12 +163,11 @@ BEGIN
 		product_length_cm DECIMAL(10,2),
 		product_height_cm DECIMAL(10,2),
 		product_width_cm DECIMAL(10,2),
-		dwh_category_name_missing_flag INT,
-		dwh_category_translation_missing_flag INT,
-		dwh_weight_outlier_flag INT,
-		dwh_dimension_outlier_flag INT,
-		dwh_photo_quantity_outlier_flag INT,
-		dwh_name_length_outlier_flag INT,
+		dwh_missing_product_id_flag BIT,
+        dwh_missing_category_flag BIT,
+        dwh_invalid_dimension_flag BIT,
+        dwh_invalid_weight_flag BIT,
+        dwh_category_name_not_in_category BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
@@ -154,8 +182,13 @@ BEGIN
 		seller_zip_code_prefix NVARCHAR(5),
 		seller_city NVARCHAR(50),
 		seller_state NVARCHAR(2),
-		dwh_unknown_zip_code_prefix_flag INT,
-		dwh_city_quality_flag INT,
+		dwh_missing_seller_id_flag BIT,
+		dwh_missing_zip_code_prefix_flag BIT,
+		dwh_missing_city_flag BIT,
+		dwh_missing_state_flag BIT,
+		dwh_zip_code_prefix_not_in_geolocation_flag BIT,
+		dwh_city_quality_flag BIT,
+		dwh_invalid_state_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
@@ -168,6 +201,8 @@ BEGIN
 	(
 		product_category_name NVARCHAR(50),
 		product_category_name_english NVARCHAR(50),
+		dwh_missing_category_name_flag BIT,
+		dwh_missing_category_name_english_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 END
