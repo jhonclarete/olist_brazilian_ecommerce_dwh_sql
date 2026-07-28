@@ -108,7 +108,7 @@ BEGIN
             END AS dwh_zip_code_prefix_not_in_geolocation_flag
         FROM bronze.olist_customers_dataset c;
 
-        /*PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
+        PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
         TRUNCATE TABLE silver.olist_sellers_dataset;
         INSERT INTO silver.olist_sellers_dataset
         (
@@ -116,35 +116,14 @@ BEGIN
             seller_zip_code_prefix,
             seller_city,
             seller_state,
-            dwh_missing_seller_id_flag,
-            dwh_missing_zip_code_prefix_flag,
-            dwh_missing_city_flag,
-            dwh_missing_state_flag,
             dwh_zip_code_prefix_not_in_geolocation_flag,
-            dwh_city_quality_flag,
-            dwh_invalid_state_flag
+            dwh_city_quality_flag
         )
         SELECT
             s.seller_id,
             s.seller_zip_code_prefix,
             s.seller_city,
             s.seller_state,
-            CASE
-                WHEN s.seller_id IS NULL OR TRIM(s.seller_id) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_seller_id_flag,
-            CASE
-                WHEN s.seller_zip_code_prefix IS NULL OR TRIM(s.seller_zip_code_prefix) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_zip_code_prefix_flag,
-            CASE
-                WHEN s.seller_city IS NULL OR TRIM(s.seller_city) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_city_flag,
-            CASE
-                WHEN s.seller_state IS NULL OR TRIM(s.seller_state) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_state_flag,
             CASE 
                 WHEN NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g 
                     WHERE g.geolocation_zip_code_prefix = s.seller_zip_code_prefix) THEN 1
@@ -153,16 +132,10 @@ BEGIN
             CASE 
                 WHEN s.seller_city LIKE '%[0-9]%' THEN 1
                 ELSE 0
-            END AS dwh_city_quality_flag,
-            CASE
-                WHEN s.seller_state NOT IN ('AC','AL','AP','AM','BA','CE','DF','ES','GO',
-                                                'MA','MT','MS','MG','PA','PB','PR','PE','PI',
-                                                'RJ','RN','RS','RO','RR','SC','SP','SE','TO') THEN 1
-                ELSE 0
-            END AS dwh_invalid_state_flag
+            END AS dwh_city_quality_flag
         FROM bronze.olist_sellers_dataset s;
 
-        PRINT 'Truncating/Inserting silver.olist_orders_dataset';
+        /*PRINT 'Truncating/Inserting silver.olist_orders_dataset';
         TRUNCATE TABLE silver.olist_orders_dataset;
         INSERT INTO silver.olist_orders_dataset
         (

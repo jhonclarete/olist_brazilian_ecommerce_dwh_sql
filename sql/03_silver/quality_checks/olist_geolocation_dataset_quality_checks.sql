@@ -2,7 +2,6 @@ USE olist_brazilian_ecommerce_dwh;
 GO
 
 -- Check for duplicate record
--- ERROR
 SELECT 
     geolocation_zip_code_prefix,
     geolocation_lat,

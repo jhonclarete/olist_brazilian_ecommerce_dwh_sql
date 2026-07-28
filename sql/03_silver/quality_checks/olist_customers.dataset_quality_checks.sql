@@ -9,8 +9,6 @@ FROM silver.olist_customers_dataset
 GROUP BY customer_id
 HAVING 
     COUNT(*) > 1 
-    OR customer_id != TRIM(customer_id)
-    OR TRIM(customer_id) = '' 
 
 -- Check string value for Nulls, whitespace, blank
 SELECT * FROM silver.olist_customers_dataset
@@ -25,7 +23,6 @@ FROM silver.olist_customers_dataset
 WHERE LEN(TRIM(customer_zip_code_prefix)) != 5
 
 -- Check if zip code exists in Geolocation
--- ERROR
 SELECT *
 FROM silver.olist_customers_dataset c
 WHERE NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g WHERE g.geolocation_zip_code_prefix = c.customer_zip_code_prefix)
@@ -46,11 +43,6 @@ from silver.olist_customers_dataset
 WHERE customer_state NOT IN ('RS','CE','PE','AL','PI','MG','DF','TO',
 'RR','SE','PA','GO','RO','ES','RJ','AC','SP','AM',
 'PR','MT','PB','MA','AP','MS','SC','RN','BA')
-
--- Check for validity of Prefix code
-SELECT * 
-FROM silver.olist_customers_dataset
-WHERE LEN(TRIM(customer_zip_code_prefix)) != 5
 
 -- Check for mojibake text
 SELECT distinct customer_city

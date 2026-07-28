@@ -51,6 +51,21 @@ BEGIN
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
+	IF OBJECT_ID('silver.olist_sellers_dataset', 'U') IS NOT NULL
+	BEGIN
+		DROP TABLE silver.olist_sellers_dataset;
+	END;
+
+	CREATE TABLE silver.olist_sellers_dataset
+	(
+		seller_id NVARCHAR(32),
+		seller_zip_code_prefix NVARCHAR(5),
+		seller_city NVARCHAR(50),
+		seller_state NVARCHAR(2),
+		dwh_zip_code_prefix_not_in_geolocation_flag BIT,
+		dwh_city_quality_flag BIT,
+		dwh_created_date DATETIME2 DEFAULT GETDATE()
+	);
 
 	IF OBJECT_ID('silver.olist_order_items_dataset', 'U') IS NOT NULL
 	BEGIN
@@ -167,27 +182,6 @@ BEGIN
         dwh_invalid_dimension_flag BIT,
         dwh_invalid_weight_flag BIT,
         dwh_category_name_not_in_category BIT,
-		dwh_created_date DATETIME2 DEFAULT GETDATE()
-	);
-
-	IF OBJECT_ID('silver.olist_sellers_dataset', 'U') IS NOT NULL
-	BEGIN
-		DROP TABLE silver.olist_sellers_dataset;
-	END;
-
-	CREATE TABLE silver.olist_sellers_dataset
-	(
-		seller_id NVARCHAR(32),
-		seller_zip_code_prefix NVARCHAR(5),
-		seller_city NVARCHAR(50),
-		seller_state NVARCHAR(2),
-		dwh_missing_seller_id_flag BIT,
-		dwh_missing_zip_code_prefix_flag BIT,
-		dwh_missing_city_flag BIT,
-		dwh_missing_state_flag BIT,
-		dwh_zip_code_prefix_not_in_geolocation_flag BIT,
-		dwh_city_quality_flag BIT,
-		dwh_invalid_state_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 END
