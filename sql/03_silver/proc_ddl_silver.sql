@@ -6,6 +6,35 @@ GO
 CREATE OR ALTER PROCEDURE silver.setup_silver_tables
 AS
 BEGIN
+	IF OBJECT_ID('silver.olist_product_category_name_translation_dataset', 'U') IS NOT NULL
+	BEGIN
+		DROP TABLE silver.olist_product_category_name_translation_dataset;
+	END;
+
+	CREATE TABLE silver.olist_product_category_name_translation_dataset
+	(
+		product_category_name NVARCHAR(50),
+		product_category_name_english NVARCHAR(50),
+		dwh_created_date DATETIME2 DEFAULT GETDATE()
+	);
+
+	IF OBJECT_ID('silver.olist_geolocation_dataset', 'U') IS NOT NULL
+	BEGIN
+		DROP TABLE silver.olist_geolocation_dataset;
+	END;
+
+	CREATE TABLE silver.olist_geolocation_dataset
+	(
+		geolocation_zip_code_prefix NVARCHAR(5),
+		geolocation_lat DECIMAL(19, 15),
+		geolocation_lng DECIMAL(19, 15),
+		geolocation_city NVARCHAR(50),
+		geolocation_state NVARCHAR(2),
+		dwh_lat_outside_brazil_flag BIT,
+		dwh_lng_outside_brazil_flag BIT,
+		dwh_created_date DATETIME2 DEFAULT GETDATE()
+	);
+
 	IF OBJECT_ID('silver.olist_customers_dataset', 'U') IS NOT NULL
 	BEGIN
 		DROP TABLE silver.olist_customers_dataset;
@@ -29,29 +58,6 @@ BEGIN
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
-	IF OBJECT_ID('silver.olist_geolocation_dataset', 'U') IS NOT NULL
-	BEGIN
-		DROP TABLE silver.olist_geolocation_dataset;
-	END;
-
-	CREATE TABLE silver.olist_geolocation_dataset
-	(
-		geolocation_zip_code_prefix NVARCHAR(5),
-		geolocation_lat DECIMAL(19, 15),
-		geolocation_lng DECIMAL(19, 15),
-		geolocation_city NVARCHAR(50),
-		geolocation_state NVARCHAR(2),
-		dwh_missing_zip_code_prefix_flag BIT,
-		dwh_missing_lat_flag BIT,
-		dwh_missing_lng_flag BIT,
-		dwh_missing_city_flag BIT,
-		dwh_missing_state_flag BIT,
-		dwh_invalid_coordinate_flag BIT,
-		dwh_outside_brazil_flag BIT,
-		dwh_invalid_state_flag BIT,
-		dwh_city_quality_flag BIT,
-		dwh_created_date DATETIME2 DEFAULT GETDATE()
-	);
 
 	IF OBJECT_ID('silver.olist_order_items_dataset', 'U') IS NOT NULL
 	BEGIN
@@ -189,20 +195,6 @@ BEGIN
 		dwh_zip_code_prefix_not_in_geolocation_flag BIT,
 		dwh_city_quality_flag BIT,
 		dwh_invalid_state_flag BIT,
-		dwh_created_date DATETIME2 DEFAULT GETDATE()
-	);
-
-	IF OBJECT_ID('silver.olist_product_category_name_translation_dataset', 'U') IS NOT NULL
-	BEGIN
-		DROP TABLE silver.olist_product_category_name_translation_dataset;
-	END;
-
-	CREATE TABLE silver.olist_product_category_name_translation_dataset
-	(
-		product_category_name NVARCHAR(50),
-		product_category_name_english NVARCHAR(50),
-		dwh_missing_category_name_flag BIT,
-		dwh_missing_category_name_english_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 END

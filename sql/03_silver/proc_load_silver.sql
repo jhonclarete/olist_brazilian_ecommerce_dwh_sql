@@ -26,23 +26,11 @@ BEGIN
         INSERT INTO silver.olist_product_category_name_translation_dataset
         (
             product_category_name,
-            product_category_name_english,
-            dwh_missing_category_name_flag,
-            dwh_missing_category_name_english_flag
+            product_category_name_english
         )
         SELECT
             product_category_name,
-            product_category_name_english,
-            CASE
-                WHEN product_category_name IS NULL OR TRIM(product_category_name) = ''
-                    THEN 1
-                    ELSE 0
-            END AS dwh_missing_category_name_flag,
-            CASE
-                WHEN product_category_name_english IS NULL OR TRIM(product_category_name_english) = ''
-                    THEN 1
-                    ELSE 0
-            END AS dwh_missing_category_name_english_flag
+            product_category_name_english
         FROM bronze.olist_product_category_name_translation_dataset;
 
         PRINT 'Truncating/Inserting silver.olist_geolocation_dataset';
@@ -54,73 +42,49 @@ BEGIN
             geolocation_lng,
             geolocation_city,
             geolocation_state,
-            dwh_missing_zip_code_prefix_flag,
-            dwh_missing_lat_flag,
-            dwh_missing_lng_flag,
-            dwh_missing_city_flag,
-            dwh_missing_state_flag,
-            dwh_invalid_coordinate_flag,
-            dwh_outside_brazil_flag,
-            dwh_invalid_state_flag,
-            dwh_city_quality_flag
+            dwh_lat_outside_brazil_flag,
+            dwh_lng_outside_brazil_flag
         )
         SELECT DISTINCT
             geolocation_zip_code_prefix,
-            CAST(geolocation_lat AS DECIMAL(19,15)) AS geolocation_lat,
-            CAST(geolocation_lng AS DECIMAL(19,15)) AS geolocation_lng,
-            LOWER(TRIM(geolocation_city)) COLLATE Latin1_General_100_CI_AI AS geolocation_city,
+            geolocation_lat,
+            geolocation_lng,
+            LOWER(
+                REPLACE(
+                REPLACE(
+                REPLACE(
+                REPLACE(
+                REPLACE(
+                REPLACE(
+                        TRANSLATE(
+                            TRIM(geolocation_city),
+                            'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ',
+                            'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC'
+                    ), 
+                '''', ' '), 
+                '4º centenario', 'quarto centenario'), 
+                '4o. centenario', 'quarto centenario'),
+                'lambari d%26apos%3boeste', 'lambari d oeste'),
+                'sao joao do pau d%26apos%3balho', 'sao joao do pau d alho'),
+                'maceia³', 'maceio')) AS geolocation_city,
             geolocation_state,
             CASE
-                WHEN geolocation_zip_code_prefix IS NULL OR TRIM(geolocation_zip_code_prefix) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_zip_code_prefix_flag,
-            CASE
-                WHEN geolocation_lat IS NULL OR TRIM(geolocation_lat) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_lat_flag,
-            CASE
-                WHEN geolocation_lng IS NULL OR TRIM(geolocation_lng) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_lng_flag,
-            CASE
-            WHEN geolocation_city IS NULL OR TRIM(geolocation_city) = ''
+                WHEN 
+                    CAST(geolocation_lat AS decimal(19, 15)) < -33.75 
+                    OR CAST(geolocation_lat AS decimal(19, 15)) > 5.27
                 THEN 1
                 ELSE 0
-            END AS dwh_missing_city_flag,
+            END AS dwh_lat_outside_brazil_flag,
             CASE
-                WHEN geolocation_state IS NULL OR TRIM(geolocation_state) = ''
+                WHEN 
+                    CAST(geolocation_lng AS decimal(19, 15)) < -73.98 
+                    OR CAST(geolocation_lng AS decimal(19, 15)) > -28.85
                 THEN 1
                 ELSE 0
-            END AS dwh_missing_state_flag,
-            CASE
-                WHEN CAST(geolocation_lat AS DECIMAL(19, 15)) NOT BETWEEN -90 AND 90
-                OR CAST(geolocation_lng AS DECIMAL(19, 15))  NOT BETWEEN -180 AND 180
-                THEN 1
-                ELSE 0
-            END AS dwh_invalid_coordinate_flag,
-            CASE
-                WHEN CAST(geolocation_lat AS DECIMAL(19, 15)) NOT BETWEEN -34.0 AND 6.0
-                OR CAST(geolocation_lng AS DECIMAL(19, 15)) NOT BETWEEN -74.0 AND -34.0
-                THEN 1
-                ELSE 0
-            END AS dwh_outside_brazil_flag,
-            CASE
-                WHEN TRIM(geolocation_state) NOT IN (
-                    'AC','AL','AP','AM','BA','CE','DF','ES',
-                    'GO','MA','MT','MS','MG','PA','PB','PR',
-                    'PE','PI','RJ','RN','RS','RO','RR','SC',
-                    'SP','SE','TO'
-                )
-                THEN 1
-                ELSE 0
-            END AS dwh_invalid_state_flag,
-            CASE
-                WHEN TRIM(geolocation_city) LIKE '%[0-9]%' THEN 1
-                ELSE 0
-            END AS dwh_city_quality_flag
+            END AS dwh_lng_outside_brazil_flag
         FROM bronze.olist_geolocation_dataset
         
-        PRINT 'Truncating/Inserting silver.olist_customers_dataset';
+        /*PRINT 'Truncating/Inserting silver.olist_customers_dataset';
         TRUNCATE TABLE silver.olist_customers_dataset;
         INSERT INTO silver.olist_customers_dataset
         (
@@ -539,7 +503,7 @@ BEGIN
             orev.review_comment_message,
             orev.review_creation_date,
             orev.review_answer_timestamp
-        FROM bronze.olist_order_reviews_dataset orev;
+        FROM bronze.olist_order_reviews_dataset orev;*/
 
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';
