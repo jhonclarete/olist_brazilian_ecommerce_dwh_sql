@@ -47,14 +47,7 @@ BEGIN
 		customer_zip_code_prefix NVARCHAR(5),
 		customer_city NVARCHAR(50),
 		customer_state NVARCHAR(2),
-		dwh_missing_customer_id_flag BIT,
-		dwh_missing_customer_unique_id_flag BIT,
-		dwh_missing_zip_code_prefix_flag BIT,
-		dwh_missing_city_flag BIT,
-		dwh_missing_state_flag BIT,
 		dwh_zip_code_prefix_not_in_geolocation_flag BIT,
-		dwh_city_quality_flag BIT,
-		dwh_invalid_state_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 

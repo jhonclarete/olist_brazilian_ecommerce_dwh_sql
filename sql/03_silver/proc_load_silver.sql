@@ -84,7 +84,7 @@ BEGIN
             END AS dwh_lng_outside_brazil_flag
         FROM bronze.olist_geolocation_dataset
         
-        /*PRINT 'Truncating/Inserting silver.olist_customers_dataset';
+        PRINT 'Truncating/Inserting silver.olist_customers_dataset';
         TRUNCATE TABLE silver.olist_customers_dataset;
         INSERT INTO silver.olist_customers_dataset
         (
@@ -93,14 +93,7 @@ BEGIN
             customer_zip_code_prefix,
             customer_city,
             customer_state,
-            dwh_missing_customer_id_flag,
-            dwh_missing_customer_unique_id_flag,
-            dwh_missing_zip_code_prefix_flag,
-            dwh_missing_city_flag,
-            dwh_missing_state_flag,
-            dwh_zip_code_prefix_not_in_geolocation_flag,
-            dwh_city_quality_flag,
-            dwh_invalid_state_flag
+            dwh_zip_code_prefix_not_in_geolocation_flag
         )
         SELECT
             c.customer_id,
@@ -109,43 +102,13 @@ BEGIN
             c.customer_city,
             c.customer_state,
             CASE
-                WHEN customer_id IS NULL OR TRIM(customer_id) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_customer_id_flag,
-            CASE
-                WHEN customer_unique_id IS NULL OR TRIM(customer_unique_id) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_customer_unique_id_flag,
-            CASE
-                WHEN customer_zip_code_prefix IS NULL OR TRIM(customer_zip_code_prefix) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_zip_code_prefix_flag,
-            CASE
-                WHEN customer_city IS NULL OR TRIM(customer_city) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_city_flag,
-            CASE
-                WHEN customer_state IS NULL OR TRIM(customer_state) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_state_flag,
-            CASE
                 WHEN NOT EXISTS (SELECT 1 FROM silver.olist_geolocation_dataset g 
                     WHERE TRIM(g.geolocation_zip_code_prefix) = TRIM(c.customer_zip_code_prefix)) THEN 1
                 ELSE 0
-            END AS dwh_zip_code_prefix_not_in_geolocation_flag,
-            CASE 
-                WHEN TRIM(c.customer_city) LIKE '%[0-9]%' THEN 1
-                ELSE 0
-            END AS dwh_city_quality_flag,
-            CASE
-                WHEN TRIM(c.customer_state) NOT IN ('AC','AL','AP','AM','BA','CE','DF','ES','GO',
-                                                'MA','MT','MS','MG','PA','PB','PR','PE','PI',
-                                                'RJ','RN','RS','RO','RR','SC','SP','SE','TO') THEN 1
-                ELSE 0
-            END AS dwh_invalid_state_flag
+            END AS dwh_zip_code_prefix_not_in_geolocation_flag
         FROM bronze.olist_customers_dataset c;
 
-        PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
+        /*PRINT 'Truncating/Inserting silver.olist_sellers_dataset';
         TRUNCATE TABLE silver.olist_sellers_dataset;
         INSERT INTO silver.olist_sellers_dataset
         (

@@ -48,9 +48,6 @@ WHERE
     OR TRIM(geolocation_city) = ''
     OR geolocation_city != TRIM(geolocation_city)
 
-select * from silver.olist_geolocation_dataset
-where TRIM(geolocation_city) LIKE '%[0-9]%'
-
 -- Check if city is in Lower Case
 SELECT * 
 FROM silver.olist_geolocation_dataset
