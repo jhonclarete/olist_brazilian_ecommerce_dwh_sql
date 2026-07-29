@@ -17,6 +17,10 @@ WHERE
     OR customer_zip_code_prefix != TRIM(customer_zip_code_prefix)
     OR TRIM(customer_zip_code_prefix) = '' 
 
+-- Check Length of IDs
+SELECT * FROM silver.olist_customers_dataset
+WHERE LEN(customer_unique_id) != 32    
+
 -- Check for validity of Prefix code
 SELECT * 
 FROM silver.olist_customers_dataset

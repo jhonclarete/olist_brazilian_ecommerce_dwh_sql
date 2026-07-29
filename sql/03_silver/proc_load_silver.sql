@@ -135,6 +135,47 @@ BEGIN
             END AS dwh_city_quality_flag
         FROM bronze.olist_sellers_dataset s;
 
+        PRINT 'Truncating/Inserting silver.olist_products_dataset';
+        TRUNCATE TABLE silver.olist_products_dataset;
+        INSERT INTO silver.olist_products_dataset
+        (
+            product_id,
+            product_category_name,
+            product_name_lenght,
+            product_description_lenght,
+            product_photos_qty,
+            product_weight_g,
+            product_length_cm,
+            product_height_cm,
+            product_width_cm,
+            dwh_category_name_not_in_category_flag,
+            dwh_invalid_product_weight_g_flag
+        )
+        SELECT
+            p.product_id,
+            CASE
+                WHEN product_category_name IS NULL THEN 'uncategorized'
+                ELSE product_category_name
+            END AS product_category_name,
+            p.product_name_lenght,
+            p.product_description_lenght,
+            p.product_photos_qty,
+            p.product_weight_g,
+            p.product_length_cm,
+            p.product_height_cm,
+            p.product_width_cm,
+            CASE 
+                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_product_category_name_translation_dataset c
+                    WHERE c.product_category_name = p.product_category_name) THEN 1
+                ELSE 0
+            END AS dwh_category_name_not_in_category,
+            CASE
+                WHEN CAST(product_weight_g AS int) <= 0 THEN 1
+                ELSE 0
+            END AS dwh_invalid_product_weight_g_flag
+
+        FROM bronze.olist_products_dataset p;
+
         /*PRINT 'Truncating/Inserting silver.olist_orders_dataset';
         TRUNCATE TABLE silver.olist_orders_dataset;
         INSERT INTO silver.olist_orders_dataset
@@ -235,68 +276,6 @@ BEGIN
                 ELSE 0
             END AS dwh_on_time_delivery_flag
         FROM bronze.olist_orders_dataset o;
-
-        PRINT 'Truncating/Inserting silver.olist_products_dataset';
-        TRUNCATE TABLE silver.olist_products_dataset;
-        INSERT INTO silver.olist_products_dataset
-        (
-            product_id,
-            product_category_name,
-            product_name_lenght,
-            product_description_lenght,
-            product_photos_qty,
-            product_weight_g,
-            product_length_cm,
-            product_height_cm,
-            product_width_cm,
-            dwh_missing_product_id_flag,
-            dwh_missing_category_flag,
-            dwh_invalid_dimension_flag,
-            dwh_invalid_weight_flag,
-            dwh_category_name_not_in_category
-        )
-        SELECT
-            p.product_id,
-            p.product_category_name,
-            p.product_name_lenght,
-            p.product_description_lenght,
-            p.product_photos_qty,
-            p.product_weight_g,
-            p.product_length_cm,
-            p.product_height_cm,
-            p.product_width_cm,
-            CASE 
-                WHEN p.product_id IS NULL OR TRIM(p.product_id) = ''
-                THEN 1 
-                ELSE 0 
-            END AS dwh_missing_product_id_flag,
-            CASE 
-                WHEN p.product_category_name IS NULL OR TRIM(p.product_category_name) = ''
-                THEN 1 
-                ELSE 0 
-            END AS dwh_missing_category_flag,
-            CASE
-                WHEN p.product_length_cm IS NULL
-                OR p.product_height_cm IS NULL
-                OR p.product_width_cm IS NULL
-                OR p.product_length_cm <= 0
-                OR p.product_height_cm <= 0
-                OR p.product_width_cm <= 0
-                THEN 1
-                ELSE 0
-            END AS dwh_invalid_dimension_flag,
-            CASE
-                WHEN p.product_weight_g <= 0
-                THEN 1
-                ELSE 0
-            END AS dwh_invalid_weight_flag,
-            CASE 
-                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_product_category_name_translation_dataset c
-                    WHERE c.product_category_name = p.product_category_name) THEN 1
-                ELSE 0
-            END AS dwh_category_name_not_in_category
-
-        FROM bronze.olist_products_dataset p;
 
         PRINT 'Truncating/Inserting silver.olist_order_items_dataset';
         TRUNCATE TABLE silver.olist_order_items_dataset;

@@ -1,77 +1,57 @@
 USE olist_brazilian_ecommerce_dwh;
 GO
 
--- product_id
-
--- Check for Nulls
-SELECT *
+-- Check for duplicate product_id
+SELECT 
+    product_id,
+    COUNT(*) 
 FROM silver.olist_products_dataset
-WHERE product_id IS NULL
+GROUP BY product_id
+HAVING 
+    COUNT(*) > 1 
 
--- Check if lenght is not 32
-SELECT *
-FROM silver.olist_products_dataset
+-- Check string value for Nulls, whitespace, blank
+-- ERROR, some category is NULL, need to set to Uncategorized
+SELECT * FROM silver.olist_products_dataset
+WHERE 
+    product_category_name IS NULL
+    OR product_category_name != TRIM(product_category_name)
+    OR TRIM(product_category_name) = '' 
+
+-- Check Length of IDs
+SELECT * FROM silver.olist_products_dataset
 WHERE LEN(product_id) != 32
 
--- Check for whitespaces
+-- Check if category exists in category translation
+-- ERROR
 SELECT *
-FROM silver.olist_products_dataset
-WHERE product_id != TRIM(product_id)
+FROM silver.olist_products_dataset p
+WHERE NOT EXISTS (SELECT 1 FROM silver.olist_product_category_name_translation_dataset ct WHERE ct.product_category_name = p.product_category_name)
+AND P.product_category_name IS NOT NULL
 
--- Check blank values
-SELECT *
-FROM silver.olist_products_dataset
-WHERE TRIM(product_id) = ''
-
--- Check for duplicates
-SELECT
-    product_id,
-    product_category_name,
-    product_name_lenght,
-    product_description_lenght,
-    product_photos_qty,
-    product_weight_g,
-    product_length_cm,
-    product_height_cm,
-    product_width_cm,
-    COUNT(*)
-FROM silver.olist_products_dataset
-GROUP BY 
-    product_id,
-    product_category_name,
-    product_name_lenght,
-    product_description_lenght,
-    product_photos_qty,
-    product_weight_g,
-    product_length_cm,
-    product_height_cm,
-    product_width_cm
-HAVING COUNT(*) > 1
-
-
--- product_category_name
-
--- Check for Nulls
-SELECT *
-FROM silver.olist_products_dataset
-WHERE product_category_name IS NULL
-
--- Check for whitespaces
-SELECT *
-FROM silver.olist_products_dataset
-WHERE product_category_name != TRIM(product_category_name)
-
--- Check blank values
-SELECT *
-FROM silver.olist_products_dataset
-WHERE TRIM(product_category_name) = ''
-
--- Check for uppercases
-SELECT *
-FROM silver.olist_products_dataset
-WHERE product_category_name COLLATE Latin1_General_CS_AS = UPPER(product_category_name);
-
--- Check if there are mojibake
+-- Check if category name is in Lower Case
 SELECT * 
 FROM silver.olist_products_dataset
-WHERE REGEXP_LIKE(product_category_name, '(Ã[a-zA-Z0-9]|â€|æ—)', 'c'); 
+WHERE product_category_name COLLATE Latin1_General_CS_AS != LOWER(product_category_name)
+
+-- Check for mojibake text
+SELECT distinct product_category_name
+FROM silver.olist_products_dataset
+WHERE product_category_name LIKE '%[0-9]%';
+
+SELECT DISTINCT 
+    product_category_name
+FROM silver.olist_products_dataset
+WHERE 
+    -- 1. Finds capital letters or accents glued inside a lowercase sequence (e.g., "MaceiÃ³")
+    product_category_name COLLATE Latin1_General_BIN LIKE '%[a-z][ÃÂÊÓãéíóúç]% '
+    -- 2. Finds loose floating mathematical/subscript characters 
+    OR product_category_name LIKE '%[³²ºª¶§†‡]%'
+    -- 3. Finds broken multi-byte question marks or text boxes
+    OR product_category_name LIKE '%?%';
+
+-- Check for negative or 0 value
+-- ERROR: product_weight_g have 0
+SELECT *
+FROM silver.olist_products_dataset
+WHERE CAST(product_weight_g AS int) <= 0

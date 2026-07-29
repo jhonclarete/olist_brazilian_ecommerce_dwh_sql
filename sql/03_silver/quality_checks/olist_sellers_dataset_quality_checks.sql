@@ -17,6 +17,10 @@ WHERE
     OR seller_state != TRIM(seller_state)
     OR TRIM(seller_state) = '' 
 
+-- Check Length of IDs
+SELECT * FROM silver.olist_sellers_dataset
+WHERE LEN(seller_id) != 32    
+
 -- Check for validity of Prefix code
 SELECT * 
 FROM silver.olist_sellers_dataset

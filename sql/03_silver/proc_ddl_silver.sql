@@ -67,6 +67,27 @@ BEGIN
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
+	IF OBJECT_ID('silver.olist_products_dataset', 'U') IS NOT NULL
+	BEGIN
+		DROP TABLE silver.olist_products_dataset;
+	END;
+
+	CREATE TABLE silver.olist_products_dataset
+	(
+		product_id NVARCHAR(32),
+		product_category_name NVARCHAR(50),
+		product_name_lenght INT,
+		product_description_lenght INT,
+		product_photos_qty INT,
+		product_weight_g INT,
+		product_length_cm DECIMAL(10,2),
+		product_height_cm DECIMAL(10,2),
+		product_width_cm DECIMAL(10,2),
+		dwh_category_name_not_in_category_flag BIT,
+        dwh_invalid_product_weight_g_flag BIT,
+		dwh_created_date DATETIME2 DEFAULT GETDATE()
+	);
+
 	IF OBJECT_ID('silver.olist_order_items_dataset', 'U') IS NOT NULL
 	BEGIN
 		DROP TABLE silver.olist_order_items_dataset;
@@ -158,30 +179,6 @@ BEGIN
         dwh_late_delivery_flag BIT,
         dwh_early_delivery_flag BIT,
         dwh_on_time_delivery_flag BIT,
-		dwh_created_date DATETIME2 DEFAULT GETDATE()
-	);
-
-	IF OBJECT_ID('silver.olist_products_dataset', 'U') IS NOT NULL
-	BEGIN
-		DROP TABLE silver.olist_products_dataset;
-	END;
-
-	CREATE TABLE silver.olist_products_dataset
-	(
-		product_id NVARCHAR(32),
-		product_category_name NVARCHAR(50),
-		product_name_lenght INT,
-		product_description_lenght INT,
-		product_photos_qty INT,
-		product_weight_g INT,
-		product_length_cm DECIMAL(10,2),
-		product_height_cm DECIMAL(10,2),
-		product_width_cm DECIMAL(10,2),
-		dwh_missing_product_id_flag BIT,
-        dwh_missing_category_flag BIT,
-        dwh_invalid_dimension_flag BIT,
-        dwh_invalid_weight_flag BIT,
-        dwh_category_name_not_in_category BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 END
