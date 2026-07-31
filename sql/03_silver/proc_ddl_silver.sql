@@ -88,6 +88,29 @@ BEGIN
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
+	IF OBJECT_ID('silver.olist_orders_dataset', 'U') IS NOT NULL
+	BEGIN
+		DROP TABLE silver.olist_orders_dataset;
+	END;
+
+	CREATE TABLE silver.olist_orders_dataset
+	(
+		order_id NVARCHAR(32),
+		customer_id NVARCHAR(32),
+		order_status NVARCHAR(20),
+		order_purchase_timestamp DATETIME2(0),
+		order_approved_at DATETIME2(0),
+		order_delivered_carrier_date DATETIME2(0),
+		order_delivered_customer_date DATETIME2(0),
+		order_estimated_delivery_date DATETIME2(0),
+		dwh_missing_approval_date_flag BIT,
+        dwh_missing_carrier_date_flag BIT,
+        dwh_missing_delivery_date_flag BIT,
+        dwh_shipment_before_approval_flag BIT,
+        dwh_delivery_before_shipment_flag BIT,
+		dwh_created_date DATETIME2 DEFAULT GETDATE()
+	);
+
 	IF OBJECT_ID('silver.olist_order_items_dataset', 'U') IS NOT NULL
 	BEGIN
 		DROP TABLE silver.olist_order_items_dataset;
@@ -147,38 +170,6 @@ BEGIN
 		review_comment_message NVARCHAR(400),
 		review_creation_date DATETIME2(0),
 		review_answer_timestamp DATETIME2(0),
-		dwh_created_date DATETIME2 DEFAULT GETDATE()
-	);
-
-	IF OBJECT_ID('silver.olist_orders_dataset', 'U') IS NOT NULL
-	BEGIN
-		DROP TABLE silver.olist_orders_dataset;
-	END;
-
-	CREATE TABLE silver.olist_orders_dataset
-	(
-		order_id NVARCHAR(32),
-		customer_id NVARCHAR(32),
-		order_status NVARCHAR(20),
-		order_purchase_timestamp DATETIME2(0),
-		order_approved_at DATETIME2(0),
-		order_delivered_carrier_date DATETIME2(0),
-		order_delivered_customer_date DATETIME2(0),
-		order_estimated_delivery_date DATETIME2(0),
-		dwh_missing_order_id_flag BIT,
-		dwh_missing_customer_id_flag BIT,
-		dwh_missing_order_status_flag BIT,
-		dwh_customer_id_not_in_customer_table_flag BIT,
-		dwh_invalid_order_status_flag BIT,
-		dwh_missing_purchase_date_flag BIT,
-        dwh_missing_estimated_delivery_date_flag BIT,
-        dwh_payment_not_approved_flag BIT,
-        dwh_not_shipped_flag BIT,
-        dwh_not_delivered_flag BIT,
-        dwh_delivered_flag BIT,
-        dwh_late_delivery_flag BIT,
-        dwh_early_delivery_flag BIT,
-        dwh_on_time_delivery_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 END

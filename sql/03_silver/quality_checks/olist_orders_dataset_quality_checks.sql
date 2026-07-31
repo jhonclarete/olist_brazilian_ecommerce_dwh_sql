@@ -5,65 +5,80 @@ GO
 SELECT 
     order_id, 
     COUNT(*)
-FROM bronze.olist_orders_dataset
+FROM silver.olist_orders_dataset
 GROUP BY order_id
 HAVING COUNT(*) > 1 OR order_id IS NULL
 
 -- Check for whitespaces or blanks
 SELECT *
-FROM bronze.olist_orders_dataset
+FROM silver.olist_orders_dataset
 WHERE 
     TRIM(order_status) = ''
     OR order_status != TRIM(order_status)
 
 -- Check for nulls
 SELECT *
-FROM bronze.olist_orders_dataset
+FROM silver.olist_orders_dataset
 WHERE order_status IS NULL
 
 -- Check if customer_id exists in Customer Table
 SELECT *
-FROM bronze.olist_orders_dataset o
+FROM silver.olist_orders_dataset o
 WHERE NOT EXISTS (SELECT 1 FROM silver.olist_customers_dataset c WHERE c.customer_id = o.customer_id)
 
 -- Check if order_status not in lower case
 SELECT *
-FROM bronze.olist_orders_dataset
+FROM silver.olist_orders_dataset
 WHERE order_status COLLATE Latin1_General_CS_AS != LOWER(order_status);
 
--- Missing timestamp checks
+-- Missing purchase timestamp
 SELECT *
-FROM bronze.olist_orders_dataset
+FROM silver.olist_orders_dataset
 WHERE order_purchase_timestamp IS NULL
 
+-- Missing Approval timestamp
 SELECT *
-FROM bronze.olist_orders_dataset
+FROM silver.olist_orders_dataset
 WHERE 
     order_approved_at IS NULL
     AND order_status NOT IN ('canceled', 'unavailable', 'created')
 
-
-
-
-
-
--- Approval timestamp cannot be earlier than purchase timestamp
+-- Missing Carrier timestamp
 SELECT *
-FROM bronze.olist_orders_dataset
-WHERE order_approved_at < order_purchase_timestamp
+FROM silver.olist_orders_dataset
+WHERE
+    order_delivered_carrier_date IS NULL
+    AND order_status IN ('delivered', 'shipped')
 
--- Carrier delivery date cannot be earlier than purchase date
+-- Missing Delivery date
 SELECT *
-FROM bronze.olist_orders_dataset
-WHERE order_delivered_carrier_date < order_purchase_timestamp
+FROM silver.olist_orders_dataset
+WHERE
+    order_delivered_customer_date IS NULL
+    AND order_status IN ('delivered')
 
--- Customer delivery date cannot be earlier than shipped date
+-- Missing Estimated Delivery Date
 SELECT *
-FROM bronze.olist_orders_dataset
-WHERE order_delivered_customer_date < order_delivered_carrier_date
+FROM silver.olist_orders_dataset
+WHERE
+    order_estimated_delivery_date IS NULL
 
--- Estimated delivery date should be after purchase date
+-- Purchase before approval
 SELECT *
-FROM bronze.olist_orders_dataset
-WHERE order_delivered_customer_date < order_delivered_carrier_date
+FROM silver.olist_orders_dataset
+WHERE CAST(order_approved_at AS datetime2) < CAST(order_purchase_timestamp AS datetime2) 
 
+-- Approval before Shipment
+SELECT *
+FROM silver.olist_orders_dataset
+WHERE CAST(order_delivered_carrier_date AS datetime2) < CAST(order_approved_at AS datetime2) 
+
+-- Shipment before Delivery
+SELECT *
+FROM silver.olist_orders_dataset
+WHERE CAST(order_delivered_customer_date AS datetime2) < CAST(order_delivered_carrier_date AS datetime2) 
+
+-- Purchase before delivery
+SELECT *
+FROM silver.olist_orders_dataset
+WHERE CAST(order_delivered_customer_date AS datetime2) < CAST(order_purchase_timestamp AS datetime2) 

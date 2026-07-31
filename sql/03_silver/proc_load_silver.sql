@@ -176,7 +176,7 @@ BEGIN
 
         FROM bronze.olist_products_dataset p;
 
-        /*PRINT 'Truncating/Inserting silver.olist_orders_dataset';
+        PRINT 'Truncating/Inserting silver.olist_orders_dataset';
         TRUNCATE TABLE silver.olist_orders_dataset;
         INSERT INTO silver.olist_orders_dataset
         (
@@ -188,20 +188,11 @@ BEGIN
             order_delivered_carrier_date,
             order_delivered_customer_date,
             order_estimated_delivery_date,
-            dwh_missing_order_id_flag,
-		    dwh_missing_customer_id_flag,
-		    dwh_missing_order_status_flag,
-		    dwh_customer_id_not_in_customer_table_flag,
-		    dwh_invalid_order_status_flag,
-            dwh_missing_purchase_date_flag,
-            dwh_missing_estimated_delivery_date_flag,
-            dwh_payment_not_approved_flag,
-            dwh_not_shipped_flag,
-            dwh_not_delivered_flag,
-            dwh_delivered_flag,
-            dwh_late_delivery_flag,
-            dwh_early_delivery_flag,
-            dwh_on_time_delivery_flag
+            dwh_missing_approval_date_flag,
+            dwh_missing_carrier_date_flag,
+            dwh_missing_delivery_date_flag,
+            dwh_shipment_before_approval_flag,
+            dwh_delivery_before_shipment_flag
         )
         SELECT
             o.order_id,
@@ -212,72 +203,46 @@ BEGIN
             o.order_delivered_carrier_date,
             o.order_delivered_customer_date,
             o.order_estimated_delivery_date,
-            CASE
-                WHEN o.order_id IS NULL OR TRIM(o.order_id) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_order_id_flag,
-            CASE
-                WHEN o.customer_id IS NULL OR TRIM(o.customer_id) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_customer_id_flag,
-            CASE
-                WHEN o.order_status IS NULL OR TRIM(o.order_status) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_order_status_flag,
             CASE 
-                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_customers_dataset c 
-                    WHERE c.customer_id = o.customer_id) THEN 1
+                WHEN 
+                    order_approved_at IS NULL
+                    AND order_status NOT IN ('canceled', 'unavailable', 'created')
+                THEN 1
                 ELSE 0
-            END AS dwh_customer_id_not_in_customer_table_flag,
-            CASE
-                WHEN o.order_status NOT IN ('approved', 'canceled',
-                                            'created',
-                                            'delivered',
-                                            'invoiced',
-                                            'processing',
-                                            'shipped',
-                                            'unavailable') THEN 1
+            END AS dwh_missing_approval_date_flag,
+
+            CASE 
+                WHEN 
+                    order_delivered_carrier_date IS NULL
+                    AND order_status IN ('delivered', 'shipped')
+                THEN 1
                 ELSE 0
-            END AS dwh_invalid_order_status_flag,
-            CASE
-                WHEN o.order_purchase_timestamp IS NULL THEN 1
+            END AS dwh_missing_carrier_date_flag,
+
+            CASE 
+                WHEN 
+                    order_delivered_customer_date IS NULL
+                    AND order_status IN ('delivered')
+                THEN 1
                 ELSE 0
-            END AS dwh_missing_purchase_date_flag,
-            CASE
-                WHEN o.order_estimated_delivery_date IS NULL THEN 1
+            END AS dwh_missing_delivery_date_flag,
+
+            CASE 
+                WHEN 
+                    CAST(order_delivered_carrier_date AS datetime2) < CAST(order_approved_at AS datetime2) 
+                THEN 1
                 ELSE 0
-            END AS dwh_missing_estimated_delivery_date_flag,
-            CASE
-                WHEN o.order_approved_at IS NULL THEN 1
+            END AS dwh_shipment_before_approval_flag,
+
+            CASE 
+                WHEN 
+                    CAST(order_delivered_customer_date AS datetime2) < CAST(order_delivered_carrier_date AS datetime2) 
+                THEN 1
                 ELSE 0
-            END AS dwh_payment_not_approved_flag,
-            CASE
-                WHEN o.order_delivered_carrier_date IS NULL THEN 1
-                ELSE 0
-            END AS dwh_not_shipped_flag,
-            CASE
-                WHEN o.order_delivered_customer_date IS NULL THEN 1
-                ELSE 0
-            END AS dwh_not_delivered_flag,
-            CASE
-                WHEN o.order_delivered_customer_date IS NOT NULL THEN 1
-                ELSE 0
-            END AS dwh_delivered_flag,
-            CASE
-                WHEN o.order_delivered_customer_date > order_estimated_delivery_date THEN 1
-                ELSE 0
-            END AS dwh_late_delivery_flag,
-            CASE
-                WHEN o.order_delivered_customer_date < order_estimated_delivery_date THEN 1
-                ELSE 0
-            END AS dwh_early_delivery_flag,
-            CASE
-                WHEN o.order_delivered_customer_date <= order_estimated_delivery_date THEN 1
-                ELSE 0
-            END AS dwh_on_time_delivery_flag
+            END AS dwh_delivery_before_shipment_flag
         FROM bronze.olist_orders_dataset o;
 
-        PRINT 'Truncating/Inserting silver.olist_order_items_dataset';
+        /*PRINT 'Truncating/Inserting silver.olist_order_items_dataset';
         TRUNCATE TABLE silver.olist_order_items_dataset;
         INSERT INTO silver.olist_order_items_dataset
         (
