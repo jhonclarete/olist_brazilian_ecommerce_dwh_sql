@@ -264,7 +264,7 @@ BEGIN
             oi.freight_value
         FROM bronze.olist_order_items_dataset oi;
 
-        /*PRINT 'Truncating/Inserting silver.olist_order_payments_dataset';
+        PRINT 'Truncating/Inserting silver.olist_order_payments_dataset';
         TRUNCATE TABLE silver.olist_order_payments_dataset
         INSERT INTO silver.olist_order_payments_dataset
         (
@@ -273,11 +273,7 @@ BEGIN
             payment_type,
             payment_installments,
             payment_value,
-            dwh_missing_order_id_flag,
-            dwh_invalid_payment_type_flag,
-            dwh_invalid_installments_flag,
-            dwh_invalid_payment_flag,
-            dwh_order_id_not_in_orders_flag
+            dwh_installments_less_than_zero_flag
         )
         SELECT
             order_id,
@@ -285,42 +281,15 @@ BEGIN
             payment_type,
             payment_installments,
             payment_value,
-            CASE 
-                WHEN op.order_id IS NULL OR TRIM(op.order_id) = ''
-                THEN 1
-                ELSE 0
-            END AS dwh_missing_order_id_flag,
-            CASE
-                WHEN LOWER(op.payment_type) NOT IN 
-                (
-                    'credit_card',
-                    'boleto',
-                    'voucher',
-                    'debit_card',
-                    'not_defined'
-                )
-                THEN 1
-                ELSE 0
-            END AS dwh_invalid_payment_type_flag,
             CASE
                 WHEN CAST(op.payment_installments AS INT) <= 0
                 THEN 1
                 ELSE 0
-            END AS dwh_invalid_installments_flag,
-            CASE
-                WHEN CAST(op.payment_value AS DECIMAL(16, 2)) <= 0
-                THEN 1
-                ELSE 0
-            END AS dwh_invalid_payment_flag,
-            CASE 
-                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_orders_dataset o
-                    WHERE o.order_id = op.order_id) THEN 1
-                ELSE 0
-            END AS dwh_order_id_not_in_orders_flag
+            END AS dwh_installments_less_than_zero_flag
 
         FROM bronze.olist_order_payments_dataset op;
 
-        PRINT 'Truncating/Inserting silver.olist_order_reviews_dataset';
+        /*PRINT 'Truncating/Inserting silver.olist_order_reviews_dataset';
         TRUNCATE TABLE silver.olist_order_reviews_dataset;
         INSERT INTO silver.olist_order_reviews_dataset
         (

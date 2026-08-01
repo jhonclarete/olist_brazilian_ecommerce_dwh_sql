@@ -140,11 +140,7 @@ BEGIN
 		payment_type NVARCHAR(20),
 		payment_installments INT,
 		payment_value DECIMAL(16,2),
-		dwh_missing_order_id_flag BIT,
-        dwh_invalid_payment_type_flag BIT,
-        dwh_invalid_installments_flag BIT,
-        dwh_invalid_payment_flag BIT,
-        dwh_order_id_not_in_orders_flag BIT,
+        dwh_installments_less_than_zero_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
