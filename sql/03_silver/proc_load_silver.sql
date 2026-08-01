@@ -242,7 +242,7 @@ BEGIN
             END AS dwh_delivery_before_shipment_flag
         FROM bronze.olist_orders_dataset o;
 
-        /*PRINT 'Truncating/Inserting silver.olist_order_items_dataset';
+        PRINT 'Truncating/Inserting silver.olist_order_items_dataset';
         TRUNCATE TABLE silver.olist_order_items_dataset;
         INSERT INTO silver.olist_order_items_dataset
         (
@@ -252,15 +252,7 @@ BEGIN
             seller_id,
             shipping_limit_date,
             price,
-            freight_value,
-            dwh_missing_order_id_flag,
-            dwh_missing_order_item_id_flag,
-            dwh_missing_product_id_flag,
-            dwh_missing_seller_id_flag,
-            dwh_invalid_price_flag,
-            dwh_invalid_freight_value_flag,
-            dwh_product_id_not_in_product_flag,
-		    dwh_seller_id_not_in_seller_flag
+            freight_value
         )
         SELECT
             oi.order_id,
@@ -269,44 +261,10 @@ BEGIN
             oi.seller_id,
             oi.shipping_limit_date,
             oi.price,
-            oi.freight_value,
-            CASE
-                WHEN oi.order_id IS NULL OR TRIM(oi.order_id) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_order_id_flag,
-            CASE
-                WHEN oi.order_item_id IS NULL THEN 1
-                ELSE 0
-            END AS dwh_missing_order_item_id_flag,
-            CASE
-                WHEN oi.product_id IS NULL OR TRIM(oi.product_id) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_product_id_flag,
-            CASE
-                WHEN oi.seller_id IS NULL OR TRIM(oi.seller_id) = '' THEN 1
-                ELSE 0
-            END AS dwh_missing_seller_id_flag,
-            CASE
-                WHEN CAST(oi.price AS DECIMAL(16, 2)) IS NULL OR CAST(oi.price AS DECIMAL(16, 2)) <= 0 THEN 1
-                ELSE 0
-            END AS dwh_invalid_price_flag,
-            CASE
-                WHEN CAST(oi.freight_value AS DECIMAL(16, 2)) IS NULL OR CAST(oi.freight_value AS DECIMAL(16, 2)) <= 0 THEN 1
-                ELSE 0
-            END AS dwh_invalid_freight_flag,
-            CASE 
-                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_products_dataset p
-                    WHERE p.product_id = oi.product_id) THEN 1
-                ELSE 0
-            END AS dwh_product_id_not_in_product_flag,
-            CASE 
-                WHEN NOT EXISTS (SELECT 1 FROM silver.olist_sellers_dataset s
-                    WHERE s.seller_id = oi.seller_id) THEN 1
-                ELSE 0
-            END AS dwh_seller_id_not_in_seller_flag
+            oi.freight_value
         FROM bronze.olist_order_items_dataset oi;
 
-        /PRINT 'Truncating/Inserting silver.olist_order_payments_dataset';
+        /*PRINT 'Truncating/Inserting silver.olist_order_payments_dataset';
         TRUNCATE TABLE silver.olist_order_payments_dataset
         INSERT INTO silver.olist_order_payments_dataset
         (

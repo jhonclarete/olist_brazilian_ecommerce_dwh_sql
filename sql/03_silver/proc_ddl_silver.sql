@@ -125,14 +125,6 @@ BEGIN
 		shipping_limit_date DATETIME2(0),
 		price DECIMAL(16,2),
 		freight_value DECIMAL(16,2),
-		dwh_missing_order_id_flag BIT,
-		dwh_missing_order_item_id_flag BIT,
-		dwh_missing_product_id_flag BIT,
-		dwh_missing_seller_id_flag BIT,
-		dwh_invalid_price_flag BIT,
-		dwh_invalid_freight_value_flag BIT,
-		dwh_product_id_not_in_product_flag BIT,
-		dwh_seller_id_not_in_seller_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 
