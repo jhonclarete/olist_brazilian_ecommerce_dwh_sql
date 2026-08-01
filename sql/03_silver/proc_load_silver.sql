@@ -289,7 +289,7 @@ BEGIN
 
         FROM bronze.olist_order_payments_dataset op;
 
-        /*PRINT 'Truncating/Inserting silver.olist_order_reviews_dataset';
+        PRINT 'Truncating/Inserting silver.olist_order_reviews_dataset';
         TRUNCATE TABLE silver.olist_order_reviews_dataset;
         INSERT INTO silver.olist_order_reviews_dataset
         (
@@ -300,17 +300,35 @@ BEGIN
             review_comment_message,
             review_creation_date,
             review_answer_timestamp,
+            dwh_duplicate_review_flag
 
         )
-        SELECT
-            orev.review_id,
-            orev.order_id,
-            orev.review_score,
-            orev.review_comment_title,
-            orev.review_comment_message,
-            orev.review_creation_date,
-            orev.review_answer_timestamp
-        FROM bronze.olist_order_reviews_dataset orev;*/
+        SELECT 
+            review_id,
+            order_id,
+            review_score,
+            review_comment_title,
+            review_comment_message,
+            review_creation_date,
+            review_answer_timestamp,
+            CASE
+                WHEN COUNT(*) OVER (PARTITION BY review_id) > 1
+                    THEN 1
+                ELSE 0
+            END AS dwh_duplicate_review_flag
+        FROM 
+        (
+            SELECT
+                review_id,
+                order_id,
+                review_score,
+                review_comment_title,
+                review_comment_message,
+                review_creation_date,
+                review_answer_timestamp,
+                COUNT(*) OVER(PARTITION BY review_id) as row_num
+            FROM bronze.olist_order_reviews_dataset
+        )t
 
         SET @batch_end_time = GETDATE();
         PRINT '==========================================';

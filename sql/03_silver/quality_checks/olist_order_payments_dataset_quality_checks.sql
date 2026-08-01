@@ -24,7 +24,6 @@ FROM silver.olist_order_payments_dataset
 WHERE payment_type COLLATE Latin1_General_CS_AS != LOWER(payment_type)
 
 -- Check if payment_installments is not less than or equal 0
--- ERROR
 SELECT * 
 FROM silver.olist_order_payments_dataset
 WHERE CAST(payment_installments AS int) <= 0

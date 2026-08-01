@@ -11,7 +11,6 @@ HAVING
     COUNT(*) > 1 
 
 -- Check string value for Nulls, whitespace, blank
--- ERROR, some category is NULL, need to set to Uncategorized
 SELECT * FROM silver.olist_products_dataset
 WHERE 
     product_category_name IS NULL
@@ -23,7 +22,6 @@ SELECT * FROM silver.olist_products_dataset
 WHERE LEN(product_id) != 32
 
 -- Check if category exists in category translation
--- ERROR
 SELECT *
 FROM silver.olist_products_dataset p
 WHERE NOT EXISTS (SELECT 1 FROM silver.olist_product_category_name_translation_dataset ct WHERE ct.product_category_name = p.product_category_name)
@@ -51,7 +49,6 @@ WHERE
     OR product_category_name LIKE '%?%';
 
 -- Check for negative or 0 value
--- ERROR: product_weight_g have 0
 SELECT *
 FROM silver.olist_products_dataset
 WHERE CAST(product_weight_g AS int) <= 0

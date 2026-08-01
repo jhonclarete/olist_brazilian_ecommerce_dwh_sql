@@ -158,6 +158,7 @@ BEGIN
 		review_comment_message NVARCHAR(400),
 		review_creation_date DATETIME2(0),
 		review_answer_timestamp DATETIME2(0),
+		dwh_duplicate_review_flag BIT,
 		dwh_created_date DATETIME2 DEFAULT GETDATE()
 	);
 END
