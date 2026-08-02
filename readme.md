@@ -78,7 +78,15 @@ Script: sql/04_gold/proc_ddl_gold.sql
 
 ### Step 7: Load Gold Layer
 
-Executes the final Gold Layer loading process.
+Loads data from silver to gold.
+
+Script: sql/04_gold/proc_load_gold.sql
+
+---
+
+### Step 8: Load Gold Layer
+
+Executes the whole loading process from Bronze to Silver to Gold.
 
 Script: runscript.sql
 
