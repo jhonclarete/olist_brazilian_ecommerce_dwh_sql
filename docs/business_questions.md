@@ -12,3 +12,8 @@
 ### Q8. Which products have the highest number of reviews?
 ### Q9. What is the average order item value?
 ### Q10. Which months generated the highest revenue?
+### Q11. What percentage of revenue comes from freight?
+### Q12. Which categories have the highest freight cost?
+### Q13. What is the revenue contribution percentage by category?
+### Q14. Which categories have revenue above average?
+### Q15. What is the month-over-month revenue growth?

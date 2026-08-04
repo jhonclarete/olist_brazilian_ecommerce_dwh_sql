@@ -93,3 +93,85 @@ ON oi.purchase_date_key = d.date_key
 WHERE oi.order_status = 'delivered'
 GROUP BY d.[year], d.month_name
 ORDER BY SUM(oi.total_item_amount) DESC, d.[year], d.month_name
+
+-- Q11. What percentage of revenue comes from freight?
+SELECT (SUM(freight_value) / SUM(total_item_amount)) * 100 AS freight_percentage
+FROM gold.fact_order_items
+WHERE order_status = 'delivered'
+
+-- Q12. Which categories have the highest freight cost?
+SELECT TOP 10
+    p.product_category_name_english AS [category],
+    SUM(oi.freight_value) AS freight_cost
+FROM gold.fact_order_items oi
+INNER JOIN gold.dim_product p
+ON oi.product_id = p.product_id
+WHERE oi.order_status = 'delivered'
+GROUP BY p.product_category_name_english
+ORDER BY SUM(oi.freight_value) DESC
+
+-- Q13. What is the revenue contribution percentage by category?
+WITH category_sales AS 
+(
+    SELECT
+        p.product_category_name_english AS [category],
+        SUM(oi.total_item_amount) AS total_revenue_per_category
+    FROM gold.fact_order_items oi
+    INNER JOIN gold.dim_product p
+    ON oi.product_id = p.product_id
+    WHERE oi.order_status = 'delivered'
+    GROUP BY p.product_category_name_english
+)
+SELECT 
+    category,
+    (total_revenue_per_category / SUM(total_revenue_per_category) OVER()) * 100 AS category_contribution
+FROM category_sales;
+
+-- Q14. Which categories have revenue above average?
+WITH category_sales14 AS 
+(
+    SELECT
+        p.product_category_name_english AS [category],
+        SUM(oi.total_item_amount) AS total_revenue_per_category
+    FROM gold.fact_order_items oi
+    INNER JOIN gold.dim_product p
+    ON oi.product_id = p.product_id
+    WHERE oi.order_status = 'delivered'
+    GROUP BY p.product_category_name_english
+),
+ranked_sales AS
+(
+    SELECT 
+        category,
+        total_revenue_per_category,
+        AVG(total_revenue_per_category) OVER() AS average_revenue
+    FROM category_sales14
+)
+SELECT 
+    category,
+    total_revenue_per_category,
+    average_revenue
+FROM ranked_sales
+WHERE total_revenue_per_category > average_revenue
+ORDER BY total_revenue_per_category DESC;
+
+-- Q15. What is the month-over-month revenue growth?
+WITH monthly_sales AS
+(
+    SELECT
+        d.year,
+        d.month,
+        SUM(oi.total_item_amount) revenue
+    FROM gold.fact_order_items oi
+    JOIN gold.dim_date d
+    ON oi.purchase_date_key = d.date_key
+    GROUP BY
+        d.year,
+        d.month
+)
+SELECT
+    year,
+    month,
+    revenue,
+    revenue - LAG(revenue) OVER(ORDER BY year, month) AS revenue_growth
+FROM monthly_sales

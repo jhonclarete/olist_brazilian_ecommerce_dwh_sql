@@ -12,6 +12,8 @@ The project follows the Medallion Architecture approach, organizing data into th
 
 The primary objective of this project is to design and build a structured data warehouse using SQL and perform business analysis using the curated datasets available in the Gold Layer.
 
+Power BI is used as the reporting and visualization layer, connecting to the Gold Layer to create interactive dashboards and business insights.
+
 ## Dataset Reference
 The original dataset was published by Olist and made publicly available through Kaggle for educational and analytical purposes.
 
@@ -101,3 +103,6 @@ docs/business_questions.md
 The corresponding SQL analysis scripts are located in:
 
 sql/05_analysis/
+
+The power bi are located in:
+powerbi/
